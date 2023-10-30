@@ -36,3 +36,8 @@ payment = NOWPaymentsSandbox("SANDBOX_API_KEY")
 
 status = payment.get_api_status()
 ```
+
+## Development
+If you would like to additional development on this package, feel free to do so.
+Fork the repository and contribute.
+
