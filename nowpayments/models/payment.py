@@ -7,11 +7,25 @@ from typing import Dict, Union
 
 
 @dataclass
-class PaymentData:  # pylint: disable=too-many-instance-attributes
+class Base:
+    def clean_data_to_dict(
+            self, is_sandbox: bool = False
+    ) -> Dict[str, Union[str, float, int]]:
+        """
+        Delete None types and return dictionary
+        """
+        data = {}
+        for field in signature(self.__class__).parameters:
+            if getattr(self, field):
+                data[field] = getattr(self, field)
+        return data
+
+
+@dataclass
+class PaymentData(Base):  # pylint: disable=too-many-instance-attributes
     """
     The PaymentData class is a container for the data that is used to make a payment.
     """
-
     price_amount: float
     price_currency: str
     pay_currency: str
@@ -25,18 +39,32 @@ class PaymentData:  # pylint: disable=too-many-instance-attributes
     payout_extra_id: str = None
     fixed_rate: bool = None
     is_fee_paid_by_user: bool = None
-    case: str = None
 
-    def clean_data_to_dict(
-        self, is_sandbox: bool = False
-    ) -> Dict[str, Union[str, float, int]]:
-        """
-        Delete None types and return dictionary
-        """
-        data = {}
-        for field in signature(self.__class__).parameters:
-            if getattr(self, field):
-                data[field] = getattr(self, field)
-        if is_sandbox and self.case is None:
-            data["case"] = "success"
-        return data
+
+@dataclass
+class InvoiceData(Base):
+    """
+    The InvoiceData class is a container for the data that is used to make a invoice.
+    """
+    price_amount: float
+    price_currency: str
+    pay_currency: float
+    ipn_callback_url: str = None
+    order_id: str = None  # User can get notified, when payment is received
+    order_description: str = None
+    success_url: int = None
+    cancel_url: str = None
+
+
+@dataclass
+class InvoicePaymentData(Base):
+    """
+    The InvoicePaymentData class is a container for the data that is used to make a payment by invoice.
+    """
+    iid: int
+    pay_currency: str
+    order_description: str = None
+    customer_email: str = None  # User can get notified, when payment is received
+    payout_address: str = None
+    payout_extra_id: int = None
+    payout_currency: str = None

@@ -4,7 +4,8 @@ A Python wrapper for the NOWPayments API.
 from typing import Any, Dict, Union
 
 import requests
-from nowpayments.models.payment import PaymentData
+
+from nowpayments.models.payment import PaymentData, InvoicePaymentData, InvoiceData
 from requests import Response
 from requests.exceptions import HTTPError
 
@@ -191,6 +192,131 @@ class NOWPayments:
             f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
         )
 
+    def create_invoice(
+            self,
+            price_amount: float,
+            price_currency: str,
+            pay_currency: str,
+            **kwargs: Union[str, float, bool, int],
+    ) -> Dict:
+        """
+        Creates an invoice. With this method, the customer is required to follow the generated url to complete the payment. Data must be sent as a JSON-object payload.
+
+        :param float price_amount: the amount that users have to pay for the order stated in fiat currency. In case
+            you do not indicate the price in crypto, our system will automatically convert this fiat amount into its
+            crypto equivalent. NOTE: Some of the assets (KISHU, NWC, FTT, CHR, XYM, SRK, KLV, SUPER, OM, XCUR, NOW, SHIB
+            SAND, MATIC, CTSI, MANA, FRONT, FTM, DAO, LGCY), have a maximum price limit of ~$2000.
+        :param str price_currency: The fiat currency in which the price_amount is specified.
+        :param str pay_currency: The cryptocurrency in which the pay_amount is specified.
+        :param float pay_amount: The amount that users have to pay for the order stated in crypto.
+        :param str ipn_callback_url: Url to receive callbacks, should contain "http" or "https".
+        :param str order_id: Inner store order ID.
+        :param str order_description: Inner store order description.
+        :param str success_url:  Url where the customer will be redirected after successful payment.
+        :param str cancel_url: Url where the customer will be redirected after failed payment.
+        :retunr dict:
+        {
+          "id": "4522625843",
+          "order_id": "RGDBP-21314",
+          "order_description": "Apple Macbook Pro 2019 x 1",
+          "price_amount": "1000",
+          "price_currency": "usd",
+          "pay_currency": null,
+          "ipn_callback_url": "https://nowpayments.io",
+          "invoice_url": "https://nowpayments.io/payment/?iid=4522625843",
+          "success_url": "https://nowpayments.io",
+          "cancel_url": "https://nowpayments.io",
+          "created_at": "2020-12-22T15:05:58.290Z",
+          "updated_at": "2020-12-22T15:05:58.290Z"
+        }
+        """
+        if price_amount <= 0:
+            raise NowPaymentsException("Amount must be greater than 0")
+        if price_currency not in ["usd", "eur", "nzd", "brl", "gbp"]:
+            raise NowPaymentsException("Unsupported fiat currency")
+        if pay_currency not in self.get_available_currencies()["currencies"]:
+            raise NowPaymentsException("Unsupported cryptocurrency")
+        payload = InvoiceData(
+            price_amount=price_amount,
+            price_currency=price_currency,
+            pay_currency=pay_currency,
+            **kwargs,
+        )
+        print(payload.clean_data_to_dict(is_sandbox=self.sandbox))
+        resp = self._post_requests(
+            f"{self.api_uri}invoice",
+            data=payload.clean_data_to_dict(is_sandbox=self.sandbox)
+        )
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
+
+    def create_payment_by_invoice(
+            self,
+            invoice_id: int,
+            pay_currency: str,
+            **kwargs: Union[str, str, int, str]
+    ) -> Dict:
+        """
+        Creates payment by invoice. With this method, your customer will be able to complete the payment without leaving your website.
+        Data must be sent as a JSON-object payload.
+        Required request fields:
+
+        :param int iid: invoice id
+        :param str pay_currency: The cryptocurrency in which the pay_amount is specified (btc, eth, etc).
+            NOTE: some of the currencies require a Memo, Destination Tag, etc., to complete a payment  (AVA, EOS,
+            BNBMAINNET, XLM, XRP). This is unique for each payment. This ID is received in “payin_extra_id” parameter of
+            the response. Payments made without "payin_extra_id" cannot be detected automatically.
+        :parm int purchase_id: id of purchase for which you want to create aother payment, only used for several
+            payments for one order
+        :param str order_description: Inner store order description, e.g. "Apple Macbook Pro 2019 x 1"
+        :param str customer_email: User email to which a notification about the successful completion of the payment
+            will be sent
+        :param str payout_address:  Usually the funds will go to the address you specify in your Personal account.
+            In case you want to receive funds on another address, you can specify it in this parameter.
+        :param int payout_extra_id: Extra id or memo or tag for external payout_address.
+        :param str payout_currency:  currency of your external payout_address, required when payout_adress is specified.
+        :return dict:
+        {
+          "payment_id": "5745459419",
+          "payment_status": "waiting",
+          "pay_address": "3EZ2uTdVDAMFXTfc6uLDDKR6o8qKBZXVkj",
+          "price_amount": 3999.5,
+          "price_currency": "usd",
+          "pay_amount": 0.17070286,
+          "pay_currency": "btc",
+          "order_id": "RGDBP-21314",
+          "order_description": "Apple Macbook Pro 2019 x 1",
+          "ipn_callback_url": "https://nowpayments.io",
+          "created_at": "2020-12-22T15:00:22.742Z",
+          "updated_at": "2020-12-22T15:00:22.742Z",
+          "purchase_id": "5837122679",
+          "amount_received": null,
+          "payin_extra_id": null,
+          "smart_contract": "",
+          "network": "btc",
+          "network_precision": 8,
+          "time_limit": null,
+          "burning_percent": null,
+          "expiration_estimate_date": "2020-12-23T15:00:22.742Z"
+        }
+        """
+        if pay_currency not in self.get_available_currencies()["currencies"]:
+            raise NowPaymentsException("Unsupported cryptocurrency")
+        data = InvoicePaymentData(
+            iid=invoice_id,
+            pay_currency=pay_currency,
+            **kwargs
+        )
+        resp = self._post_requests(f"{self.api_uri}invoice-payment", data=data.clean_data_to_dict(is_sandbox=self.sandbox))
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
+
     # -------------------------
     #      CURRENCIES API
     # -------------------------
@@ -221,24 +347,6 @@ class NOWPayments:
             f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
         )
 
-    def create_invoice(
-        self,
-        price_amount: float,
-        price_currency: str,
-        pay_currency: str,
-        **kwargs: Union[str, float, bool, int],
-    ) -> Dict:
-        """
-        Creates a payment link. With this method, the customer is required to follow the generated url to complete
-        the payment.
-
-        :param float price_amount: The fiat equivalent of the price to be paid in crypto.
-
-        :param str price_currency: The fiat currency in which the price_amount is specified.
-
-        :param str pay_currency: The crypto currency in which the pay_amount is specified.
-
-        :param float pay_amount: The amount that users have to pay for the order stated in crypto.
 
         :param str ipn_callback_url: Url to receive callbacks, should contain "http" or "https".
 
