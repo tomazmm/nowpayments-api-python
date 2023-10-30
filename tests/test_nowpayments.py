@@ -1,4 +1,5 @@
 """Testing Module"""
+import json
 import os
 
 import dotenv
@@ -6,49 +7,83 @@ import pytest
 from pytest_mock.plugin import MockerFixture
 from requests.exceptions import HTTPError
 
-from nowpayments import NOWPayments
+from nowpayments import NOWPayments, NowPaymentsException
 
 config = dotenv.dotenv_values()
 
 
 @pytest.fixture
-def now_payments() -> NOWPayments:
+def now_payments_api_key() -> NOWPayments:
     """
     NOWPayments class fixture.
     :return: NOWPayments class.
     """
-    return NOWPayments(api_key=config["API_KEY"])
+    return NOWPayments(api_key=config["API_KEY"], sandbox=True)
+
+
+@pytest.fixture
+def now_payments_email_password() -> NOWPayments:
+    """
+    NOWPayments class fixture.
+    :return: NOWPayments class.
+    """
+    return NOWPayments(
+        api_key=config["API_KEY"],
+        email=config["EMAIL"],
+        password=config["PASSWORD"],
+        sandbox=True)
 
 
 def test_initialization() -> None:
     # Init just with Api key
     now_payments = NOWPayments(api_key=config["API_KEY"])
     assert now_payments.sandbox is False
-    assert now_payments.api_uri == "https://api.nowpayments.io/v1/{}"
+    assert now_payments.api_uri == "https://api.nowpayments.io/v1/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == ""
     assert now_payments._password == ""
     # Init with additional email and password
     now_payments = NOWPayments(api_key=config["API_KEY"], email=config["EMAIL"], password=config["PASSWORD"])
     assert now_payments.sandbox is False
-    assert now_payments.api_uri == "https://api.nowpayments.io/v1/{}"
+    assert now_payments.api_uri == "https://api.nowpayments.io/v1/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == config["EMAIL"]
     assert now_payments._password == config["PASSWORD"]
     # Create a sandbox instance with API key only
     now_payments = NOWPayments(api_key=config["API_KEY"], sandbox=True)
     assert now_payments.sandbox is True
-    assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/{}"
+    assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == ""
     assert now_payments._password == ""
     # Create a sandbox instance with all parameters
-    now_payments = NOWPayments(api_key=config["API_KEY"], email=config["EMAIL"], password=config["PASSWORD"], sandbox=True)
+    now_payments = NOWPayments(api_key=config["API_KEY"], email=config["EMAIL"], password=config["PASSWORD"],
+                               sandbox=True)
     assert now_payments.sandbox is True
-    assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/{}"
+    assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == config["EMAIL"]
     assert now_payments._password == config["PASSWORD"]
+
+
+# -------------------------
+# /status
+# -------------------------
+def test_get_api_status(now_payments_api_key: NOWPayments) -> None:
+    assert now_payments_api_key.get_api_status() == {"message": "OK"}
+
+
+# -------------------------
+# POST /auth
+# -------------------------
+def test_auth(now_payments_email_password: NOWPayments) -> None:
+    payload = now_payments_email_password.auth()
+    assert "token" in payload
+
+
+def test_email_and_password_missing(now_payments_api_key: NOWPayments) -> None:
+    with pytest.raises(NowPaymentsException, match="Email and password are missing"):
+        assert now_payments_api_key.auth()
 
 
 def test_estimate_amount_url_param(
@@ -98,22 +133,6 @@ def test_get_requests(
         "https://api.nowpayments.io/v1/status"
     )
     assert response.status_code == 200
-
-
-def test_get_api_status(
-        now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-        mocker: MockerFixture,
-) -> None:
-    """
-    Get api status test
-    """
-    mocker.patch.object(
-        NOWPayments,
-        "_get_url",
-        return_value="https://api.nowpayments.io/v1/status",
-        autospec=True,
-    )
-    assert now_payments.get_api_status() == {"message": "OK"}
 
 
 def test_get_available_currencies(

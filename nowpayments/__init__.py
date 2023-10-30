@@ -9,6 +9,10 @@ from requests import Response
 from requests.exceptions import HTTPError
 
 
+class NowPaymentsException(Exception):
+    pass
+
+
 class NOWPayments:
     _ESTIMATE_AMOUNT_URL = "estimate?amount={}&currency_from={}&currency_to={}"
     _MIN_AMOUNT_URL = "min-amount?currency_from={}"
@@ -20,7 +24,7 @@ class NOWPayments:
         :param str api_key: API key
         """
 
-        self.api_uri = "https://api.nowpayments.io/v1/{}" if not sandbox else "https://api-sandbox.nowpayments.io/v1/{}"
+        self.api_uri = "https://api.nowpayments.io/v1/" if not sandbox else "https://api-sandbox.nowpayments.io/v1/"
 
         self.session = requests.Session()
         self._api_key = api_key
@@ -28,21 +32,13 @@ class NOWPayments:
         self._password = password
         self.sandbox = sandbox
 
-    def _get_url(self, endpoint: str) -> str:
-        """
-        Set the url to be used
-
-        :param str endpoint: Endpoint to be used
-        """
-        return self.api_uri.format(endpoint)
-
-    def _get_requests(self, url: str) -> Response:
-        """
-        Make get requests with your header
-
-        :param str url: URL to which the request is made
-        """
-        headers = {"x-api-key": self.key}
+    # -------------------------------
+    # Request Session Method Wrappers
+    # -------------------------------
+    def _get_requests(self, url: str, bearer: str = None) -> Response:
+        headers = {"x-api-key": self._api_key}
+        if bearer:
+            headers["Authorization"] = f"Bearer {bearer['token']}"
         return self.session.get(url=url, headers=headers)
 
     def _post_requests(self, url: str, data: Dict = None) -> Response:
@@ -52,10 +48,37 @@ class NOWPayments:
         :param url: URL to which the request is made
         :param data: Data to which the request is made
         """
-        headers = {"x-api-key": self.key}
+        headers = {"x-api-key": self._api_key}
         return self.session.post(url=url, headers=headers, data=data)
 
-    def _create_bearer(self):
+    def _get_url(self, endpoint: str) -> str:
+        """
+        Set the url to be used
+
+        :param str endpoint: Endpoint to be used
+        """
+        return f"{self.api_uri}{endpoint}"
+
+    # -------------------------
+    # GET /status
+    # -------------------------
+    def get_api_status(self) -> Dict:
+        """
+        https://documenter.getpostman.com/view/7907941/S1a32n38#9998079f-dcc8-4e07-9ac7-3d52f0fd733a
+        """
+        resp = requests.get(f"{self.api_uri}status")
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "No description")}'
+        )
+
+    # -------------------------
+    # POST /auth
+    # -------------------------
+    def auth(self):
+        if not self._email or not self._password:
+            raise NowPaymentsException("Email and password are missing")
         resp = self._post_requests(self._get_url("auth"), {
             "email": self._email,
             "password": self._password
