@@ -10,27 +10,23 @@ from requests.exceptions import HTTPError
 
 
 class NOWPayments:
-    """
-    Class to used for the NOWPayments API.
-    """
-
-    api_uri = "https://api.nowpayments.io/v1/{}"
     _ESTIMATE_AMOUNT_URL = "estimate?amount={}&currency_from={}&currency_to={}"
     _MIN_AMOUNT_URL = "min-amount?currency_from={}"
 
-    def __init__(self, key: str, email: str, password: str, sandbox=False) -> None:
+    def __init__(self, api_key: str, email: str = "", password: str = "", sandbox=False) -> None:
         """
         Class construct. Receives your api key as initial parameter.
 
-        :param str key: API key
+        :param str api_key: API key
         """
-        self.sandbox = sandbox
+
         self.api_uri = "https://api.nowpayments.io/v1/{}" if not sandbox else "https://api-sandbox.nowpayments.io/v1/{}"
 
         self.session = requests.Session()
-        self._key = key
+        self._api_key = api_key
         self._email = email
         self._password = password
+        self.sandbox = sandbox
 
     def _get_url(self, endpoint: str) -> str:
         """
@@ -38,7 +34,7 @@ class NOWPayments:
 
         :param str endpoint: Endpoint to be used
         """
-        return self._API_URL.format(endpoint)
+        return self.api_uri.format(endpoint)
 
     def _get_requests(self, url: str) -> Response:
         """

@@ -1,11 +1,14 @@
 """Testing Module"""
 import os
 
+import dotenv
 import pytest
 from pytest_mock.plugin import MockerFixture
 from requests.exceptions import HTTPError
 
 from nowpayments import NOWPayments
+
+config = dotenv.dotenv_values()
 
 
 @pytest.fixture
@@ -14,21 +17,38 @@ def now_payments() -> NOWPayments:
     NOWPayments class fixture.
     :return: NOWPayments class.
     """
-    return NOWPayments(key=os.environ["API_KEY"])
+    return NOWPayments(api_key=config["API_KEY"])
 
 
-def test_api_url_param(
-        now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-) -> None:
-    """
-    API url param test
-    :param now_payments: NOWPayments class fixture
-    :return:
-    """
-    assert (
-            now_payments._API_URL  # pylint: disable=protected-access
-            == "https://api.nowpayments.io/v1/{}"
-    )
+def test_initialization() -> None:
+    # Init just with Api key
+    now_payments = NOWPayments(api_key=config["API_KEY"])
+    assert now_payments.sandbox is False
+    assert now_payments.api_uri == "https://api.nowpayments.io/v1/{}"
+    assert now_payments._api_key == config["API_KEY"]
+    assert now_payments._email == ""
+    assert now_payments._password == ""
+    # Init with additional email and password
+    now_payments = NOWPayments(api_key=config["API_KEY"], email=config["EMAIL"], password=config["PASSWORD"])
+    assert now_payments.sandbox is False
+    assert now_payments.api_uri == "https://api.nowpayments.io/v1/{}"
+    assert now_payments._api_key == config["API_KEY"]
+    assert now_payments._email == config["EMAIL"]
+    assert now_payments._password == config["PASSWORD"]
+    # Create a sandbox instance with API key only
+    now_payments = NOWPayments(api_key=config["API_KEY"], sandbox=True)
+    assert now_payments.sandbox is True
+    assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/{}"
+    assert now_payments._api_key == config["API_KEY"]
+    assert now_payments._email == ""
+    assert now_payments._password == ""
+    # Create a sandbox instance with all parameters
+    now_payments = NOWPayments(api_key=config["API_KEY"], email=config["EMAIL"], password=config["PASSWORD"], sandbox=True)
+    assert now_payments.sandbox is True
+    assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/{}"
+    assert now_payments._api_key == config["API_KEY"]
+    assert now_payments._email == config["EMAIL"]
+    assert now_payments._password == config["PASSWORD"]
 
 
 def test_estimate_amount_url_param(
