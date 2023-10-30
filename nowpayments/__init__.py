@@ -14,19 +14,23 @@ class NOWPayments:
     Class to used for the NOWPayments API.
     """
 
-    _API_URL = "https://api.nowpayments.io/v1/{}"
+    api_uri = "https://api.nowpayments.io/v1/{}"
     _ESTIMATE_AMOUNT_URL = "estimate?amount={}&currency_from={}&currency_to={}"
     _MIN_AMOUNT_URL = "min-amount?currency_from={}"
-    _IS_SANDBOX = False
 
-    def __init__(self, key: str) -> None:
+    def __init__(self, key: str, email: str, password: str, sandbox=False) -> None:
         """
         Class construct. Receives your api key as initial parameter.
 
         :param str key: API key
         """
+        self.sandbox = sandbox
+        self.api_uri = "https://api.nowpayments.io/v1/{}" if not sandbox else "https://api-sandbox.nowpayments.io/v1/{}"
+
         self.session = requests.Session()
-        self.key = key
+        self._key = key
+        self._email = email
+        self._password = password
 
     def _get_url(self, endpoint: str) -> str:
         """
@@ -54,6 +58,17 @@ class NOWPayments:
         """
         headers = {"x-api-key": self.key}
         return self.session.post(url=url, headers=headers, data=data)
+
+    def _create_bearer(self):
+        resp = self._post_requests(self._get_url("auth"), {
+            "email": self._email,
+            "password": self._password
+        })
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
 
     def get_api_status(self) -> Dict:
         """
