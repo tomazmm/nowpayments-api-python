@@ -24,6 +24,7 @@ class PaymentData:  # pylint: disable=too-many-instance-attributes
     payout_currency: str = None
     payout_extra_id: str = None
     fixed_rate: bool = None
+    is_fee_paid_by_user: bool = None
     case: str = None
 
     def clean_data_to_dict(
