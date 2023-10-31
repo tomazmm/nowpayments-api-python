@@ -81,7 +81,7 @@ def test_auth(now_payments_email_password: NOWPayments) -> None:
     assert "token" in payload
 
 
-def test_email_and_password_missing(now_payments_api_key: NOWPayments) -> None:
+def test_email_and_password_missing_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Email and password are missing"):
         assert now_payments_api_key.auth()
 
@@ -97,17 +97,17 @@ def test_get_estimated_price(now_payments_api_key: NOWPayments) -> None:
     assert "estimated_amount" in response
 
 
-def test_amount_greater_than_zero(now_payments_api_key: NOWPayments) -> None:
+def test_amount_greater_than_zero_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Amount must be greater than 0"):
         now_payments_api_key.get_estimated_price(0, "usd", "btc")
 
 
-def test_unsupported_fiat_currency(now_payments_api_key: NOWPayments) -> None:
+def test_unsupported_fiat_currency_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported fiat currency"):
         now_payments_api_key.get_estimated_price(1, "ustr", "btc")
 
 
-def test_unsupported_cryptocurrency(now_payments_api_key: NOWPayments) -> None:
+def test_unsupported_cryptocurrency_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported cryptocurrency"):
         now_payments_api_key.get_estimated_price(1, "usd", "btccc")
 
@@ -178,17 +178,27 @@ def test_create_payment_with_optional_paras(now_payments_api_key: NOWPayments) -
     assert "expiration_estimate_date" in response
 
 
-def test_create_payment_with_wrong_amount(now_payments_api_key: NOWPayments) -> None:
+def test_create_payment_with_unexpected_keyword_argument_error(now_payments_api_key: NOWPayments) -> None:
+    with pytest.raises(TypeError):
+        now_payments_api_key.create_payment(
+            price_amount=100,
+            price_currency="usd",
+            pay_currency="btc",
+            unexpected="argument",
+        )
+
+
+def test_create_payment_with_invalid_amount_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Amount must be greater than 0"):
         now_payments_api_key.get_estimated_price(0, "usd", "btc")
 
 
-def test_create_payment_with_unsupported_fiat_currency(now_payments_api_key: NOWPayments) -> None:
+def test_create_payment_with_unsupported_fiat_currency_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported fiat currency"):
         now_payments_api_key.get_estimated_price(1, "ustr", "btc")
 
 
-def test_create_payment_with_unsupported_cryptocurrency(now_payments_api_key: NOWPayments) -> None:
+def test_create_payment_with_unsupported_cryptocurrency_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported cryptocurrency"):
         now_payments_api_key.get_estimated_price(1, "usd", "btccc")
 
@@ -234,19 +244,19 @@ def test_create_invoice_with_optional_paras(now_payments_api_key: NOWPayments) -
     assert "updated_at" in response
 
 
-def test_create_invoice_with_wrong_amount(now_payments_api_key: NOWPayments) -> None:
+def test_create_invoice_with_invalid_amount_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Amount must be greater than 0"):
         now_payments_api_key.create_invoice(0, "usd", "btc")
     with pytest.raises(NowPaymentsException, match="Amount must be greater than 0"):
         now_payments_api_key.create_invoice(-5.5, "usd", "btc")
 
 
-def test_create_invoice_with_unsupported_fiat_currency(now_payments_api_key: NOWPayments) -> None:
+def test_create_invoice_with_unsupported_fiat_currency_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported fiat currency"):
         now_payments_api_key.create_invoice(1, "ustr", "btc")
 
 
-def test_create_invoice_with_unsupported_cryptocurrency(now_payments_api_key: NOWPayments) -> None:
+def test_create_invoice_with_unsupported_cryptocurrency_error(now_payments_api_key: NOWPayments) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported cryptocurrency"):
         now_payments_api_key.create_invoice(1, "usd", "btccc")
 
@@ -303,10 +313,43 @@ def test_create_payment_by_invoice_with_optional_paras(now_payments_api_key: NOW
     assert "expiration_estimate_date" in response
 
 
-def test_create_payment_by_invoice_with_unsupported_cryptocurrency(now_payments_api_key: NOWPayments) -> None:
+def test_create_payment_by_invoice_with_unsupported_cryptocurrency_error(now_payments_api_key: NOWPayments) -> None:
     invoice = now_payments_api_key.create_invoice(100, "usd", "btc")
     with pytest.raises(NowPaymentsException, match="Unsupported cryptocurrency"):
         now_payments_api_key.create_payment_by_invoice(invoice["id"], "btccc")
+
+
+def test_get_payment_status(now_payments_api_key: NOWPayments) -> None:
+    payment = now_payments_api_key.create_payment(100, price_currency="usd", pay_currency="btc")
+    response = now_payments_api_key.get_payment_status(int(payment["payment_id"]))
+    assert int(response["payment_id"]) == int(payment["payment_id"])
+    assert response["payment_status"] in ["waiting", "finished"]  # In sandbox environment only two possibilities
+    assert "pay_address" in response
+    assert response["price_amount"] == 100
+    assert response["price_currency"] == "usd"
+    assert "pay_amount" in response
+    assert "actually_paid" in response
+    assert response["pay_currency"] == "btc"
+    assert "order_id" in response
+    assert "order_description" in response
+    assert "purchase_id" in response
+    assert "created_at" in response
+    assert "updated_at" in response
+    assert "outcome_amount" in response
+    assert "outcome_currency" in response
+
+
+def test_get_payment_status_with_invalid_payment_id_error(now_payments_api_key: NOWPayments) -> None:
+    with pytest.raises(NowPaymentsException, match="Payment ID should be greater than zero"):
+        now_payments_api_key.get_payment_status(0)
+    with pytest.raises(NowPaymentsException, match="Payment ID should be greater than zero"):
+        now_payments_api_key.get_payment_status(-192385)
+
+
+def test_get_list_fof_payments(now_payments_email_password: NOWPayments) -> None:
+    payment_list = now_payments_email_password.get_list_of_payments()
+    assert type(payment_list["data"]) == list
+    assert len(payment_list["data"]) <= 10
 
 
 # -------------------------
@@ -316,189 +359,3 @@ def test_get_available_currencies(now_payments_api_key: NOWPayments) -> None:
     response = now_payments_api_key.get_available_currencies()
     assert "currencies" in response
     assert type(response["currencies"]) == list
-
-# def test_estimate_amount_url_param(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-# ) -> None:
-#     """
-#     Estimate amount url param test.
-#     """
-#     assert (
-#             now_payments._ESTIMATE_AMOUNT_URL  # pylint: disable=protected-access
-#             == "estimate?amount={}&currency_from={}&currency_to={}"
-#     )
-#
-#
-# def test_min_amount_url_param(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-# ) -> None:
-#     """
-#     Min amount url param test.
-#     """
-#     assert (
-#             now_payments._MIN_AMOUNT_URL  # pylint: disable=protected-access
-#             == "min-amount?currency_from={}"
-#     )
-#
-#
-# def test_get_url(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-# ) -> None:
-#     """
-#     Get URL test
-#     """
-#     assert (
-#             now_payments._get_url("endpoint")  # pylint: disable=protected-access
-#             == "https://api.nowpayments.io/v1/endpoint"
-#     )
-#
-#
-# def test_get_requests(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-# ) -> None:
-#     """
-#     Get request test
-#     """
-#
-#     response = now_payments._get_requests(  # pylint: disable=protected-access
-#         "https://api.nowpayments.io/v1/status"
-#     )
-#     assert response.status_code == 200
-#
-#
-#
-#
-# def test_get_available_checked_currencies(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-#         mocker: MockerFixture,
-# ) -> None:
-#     """
-#     Get available checked currencies test
-#     """
-#     mocker.patch.object(
-#         NOWPayments,
-#         "_get_url",
-#         return_value="https://api.nowpayments.io/v1/merchant/coins",
-#         autospec=True,
-#     )
-#     result = now_payments.get_available_checked_currencies()
-#     assert result.get("selectedCurrencies", "Not found") != "Not found"
-#
-#
-# def test_get_estimate_price(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-#         mocker: MockerFixture,
-# ) -> None:
-#     """
-#     Get estimate price test.
-#     """
-#     mocker.patch.object(
-#         NOWPayments,
-#         "_get_url",
-#         return_value="https://api.nowpayments.io/v1/estimate?amount=\
-#         100&currency_from=usd&currency_to=btc",
-#         autospec=True,
-#     )
-#     result = now_payments.get_estimated_price(
-#         amount=100, currency_from="usd", currency_to="btc"
-#     )
-#     assert result.get("estimated_amount", "Not found") != "Not found"
-#
-#
-# def test_get_estimate_price_error(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-#         mocker: MockerFixture,
-# ) -> None:
-#     """
-#     Get estimate price test with error.
-#     """
-#     mocker.patch.object(
-#         NOWPayments,
-#         "_get_url",
-#         return_value="https://api.nowpayments.io/v1/estimate?amount=\
-#         100&currency_from=cup&currency_to=btc",
-#         autospec=True,
-#     )
-#     with pytest.raises(HTTPError, match="Error 400: Currency CUP was not found"):
-#         now_payments.get_estimated_price(
-#             amount=100, currency_from="cup", currency_to="eur"
-#         )
-#
-#
-# def test_create_payment_unexpected_keyword_argument_error(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-# ) -> None:
-#     """
-#     Create payment test with unexpected keyword argument error
-#     """
-#     with pytest.raises(TypeError):
-#         now_payments.create_payment(
-#             price_amount=100,
-#             price_currency="usd",
-#             pay_currency="btc",
-#             unexpected="argument",
-#         )
-#
-#
-# def test_create_payment(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-#         mocker: MockerFixture,
-# ) -> None:
-#     """
-#     Create payment test
-#     """
-#     mocker.patch.object(
-#         NOWPayments,
-#         "_get_url",
-#         return_value="https://api.nowpayments.io/v1/payment",
-#         autospec=True,
-#     )
-#     result = now_payments.create_payment(
-#         price_amount=100, price_currency="usd", pay_currency="btc"
-#     )
-#     assert result.get("payment_id", "Not found") != "Not found"
-#
-#
-# def test_create_payment_with_argument(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-#         mocker: MockerFixture,
-# ) -> None:
-#     """
-#     Create payment test with argument
-#     """
-#     mocker.patch.object(
-#         NOWPayments,
-#         "_get_url",
-#         return_value="https://api.nowpayments.io/v1/payment",
-#         autospec=True,
-#     )
-#     result = now_payments.create_payment(
-#         price_amount=100,
-#         price_currency="usd",
-#         pay_currency="btc",
-#         order_description="My order",
-#     )
-#     assert result.get("order_description", "Not found") == "My order"
-#
-#
-# def test_create_payment_with_error(
-#         now_payments: NOWPayments,  # pylint: disable=redefined-outer-name
-#         mocker: MockerFixture,
-# ) -> None:
-#     """
-#     Create payment test with error
-#     """
-#     mocker.patch.object(
-#         NOWPayments,
-#         "_get_url",
-#         return_value="https://api.nowpayments.io/v1/payment",
-#         autospec=True,
-#     )
-#     with pytest.raises(
-#             HTTPError,
-#             match="Error 400: Currency cup was not found",
-#     ):
-#         now_payments.create_payment(
-#             price_amount=100, price_currency="usd", pay_currency="cup"
-#         )
-#

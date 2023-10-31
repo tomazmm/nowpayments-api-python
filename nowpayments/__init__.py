@@ -15,8 +15,8 @@ class NowPaymentsException(Exception):
 
 
 class NOWPayments:
-    _ESTIMATE_AMOUNT_URL = "estimate?amount={}&currency_from={}&currency_to={}"
-    _MIN_AMOUNT_URL = "min-amount?currency_from={}"
+    BASE_URI = "https://api.nowpayments.io/v1/"
+    BASE_URI_SANDBOX = "https://api-sandbox.nowpayments.io/v1/"
 
     def __init__(self, api_key: str, email: str = "", password: str = "", sandbox=False) -> None:
         """
@@ -25,7 +25,7 @@ class NOWPayments:
         :param str api_key: API key
         """
 
-        self.api_uri = "https://api.nowpayments.io/v1/" if not sandbox else "https://api-sandbox.nowpayments.io/v1/"
+        self.api_uri = self.BASE_URI if not sandbox else self.BASE_URI_SANDBOX
 
         self.session = requests.Session()
         self._api_key = api_key
@@ -36,21 +36,24 @@ class NOWPayments:
     # -------------------------------
     # Request Session Method Wrappers
     # -------------------------------
-    def _get_requests(self, url: str, bearer: str = None) -> Response:
+    def _get_request(self, endpoint: str, bearer: str = None) -> Response:
+        uri = f"{self.api_uri}{endpoint}"
         headers = {"x-api-key": self._api_key}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer['token']}"
-        return self.session.get(url=url, headers=headers)
+        return self.session.get(url=uri, headers=headers)
 
-    def _post_requests(self, url: str, data: Dict = None) -> Response:
+    def _post_requests(self, endpoint: str, data: Dict = None) -> Response:
         """
         Make get requests with your header and data
 
         :param url: URL to which the request is made
         :param data: Data to which the request is made
         """
+        uri = f"{self.api_uri}{endpoint}"
+        print(uri)
         headers = {"x-api-key": self._api_key}
-        return self.session.post(url=url, headers=headers, data=data)
+        return self.session.post(url=uri, headers=headers, data=data)
 
     def _get_url(self, endpoint: str) -> str:
         """
@@ -80,7 +83,7 @@ class NOWPayments:
     def auth(self):
         if not self._email or not self._password:
             raise NowPaymentsException("Email and password are missing")
-        resp = self._post_requests(self._get_url("auth"), {
+        resp = self._post_requests("auth", {
             "email": self._email,
             "password": self._password
         })
@@ -110,8 +113,8 @@ class NOWPayments:
         if currency_to not in self.get_available_currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
 
-        endpoint = f"{self.api_uri}estimate?amount={amount}&currency_from={currency_from}&currency_to={currency_to}"
-        resp: Response = self._get_requests(endpoint)
+        endpoint = f"estimate?amount={amount}&currency_from={currency_from}&currency_to={currency_to}"
+        resp: Response = self._get_request(endpoint)
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -182,10 +185,7 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs,
         )
-        resp = self._post_requests(
-            f"{self.api_uri}payment",
-            data=payload.clean_data_to_dict(is_sandbox=self.sandbox)
-        )
+        resp = self._post_requests("payment", data=payload.clean_data_to_dict(is_sandbox=self.sandbox))
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -208,7 +208,7 @@ class NOWPayments:
             SAND, MATIC, CTSI, MANA, FRONT, FTM, DAO, LGCY), have a maximum price limit of ~$2000.
         :param str price_currency: The fiat currency in which the price_amount is specified.
         :param str pay_currency: The cryptocurrency in which the pay_amount is specified.
-        :param float pay_amount: The amount that users have to pay for the order stated in crypto.
+
         :param str ipn_callback_url: Url to receive callbacks, should contain "http" or "https".
         :param str order_id: Inner store order ID.
         :param str order_description: Inner store order description.
@@ -242,10 +242,7 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs,
         )
-        resp = self._post_requests(
-            f"{self.api_uri}invoice",
-            data=payload.clean_data_to_dict(is_sandbox=self.sandbox)
-        )
+        resp = self._post_requests("invoice", data=payload.clean_data_to_dict(is_sandbox=self.sandbox))
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -309,8 +306,61 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs
         )
-        resp = self._post_requests(f"{self.api_uri}invoice-payment",
-                                   data=data.clean_data_to_dict(is_sandbox=self.sandbox))
+        resp = self._post_requests("invoice-payment", data=data.clean_data_to_dict(is_sandbox=self.sandbox))
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
+
+    def get_payment_status(self, payment_id: int) -> Any:
+        """
+        Get the actual information about the payment.
+
+        :param int payment_id: ID of the payment in the request.
+        """
+        if payment_id <= 0:
+            raise NowPaymentsException("Payment ID should be greater than zero")
+        resp: Response = self._get_request(f"payment/{payment_id}")
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
+
+    def get_list_of_payments(self,
+                             limit: int = 10,
+                             page: int = 0,
+                             sort_by: str = "created_at",
+                             order_by: str = "asc"
+                             ) -> Any:
+        """
+        Returns the entire list of all transactions, created with certain API key.
+
+        :param int limit: Number of records in one page. (possible values: from 1 to 500)
+        :param int page: The page number you want to get (possible values: from 0 to page count - 1)
+        :param str sort_by: Sort the received list by a paramenter. Set to created_at by default
+            (possible values:payment_id, payment_status, pay_address, price_amount, price_currency, pay_amount,
+            actually_paid, pay_currency, order_id, order_description, purchase_id, outcome_amount, outcome_currency)
+        :param str order_by: Display the list in ascending or descending order. Set to asc by default
+            (possible values: asc, desc)
+
+        """
+        available_sort_paras = ['created_at', 'payment_id', 'payment_status', 'pay_address', 'price_amount',
+                                'price_currency',
+                                'pay_amount', 'actually_paid', 'pay_currency', 'order_id', 'order_description',
+                                'purchase_id', 'outcome_amount', 'outcome_currency']
+        if 1 > limit < 500:
+            raise NowPaymentsException("Limit must be a number between 1 and 500")
+        if page < 0:
+            raise NowPaymentsException("Page number must be equal or greater than 0")
+        if sort_by not in available_sort_paras:
+            raise NowPaymentsException("Invalid sort parameter")
+        if order_by not in ["asc", "desc"]:
+            raise NowPaymentsException("Invalid sort parameter")
+
+        endpoint = f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}"
+        resp: Response = self._get_request(endpoint, bearer=self.auth())
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -325,7 +375,7 @@ class NOWPayments:
         This is a method for obtaining information about all cryptocurrencies available for payments.
         :param boolean fixed_rate:
         """
-        resp = self._get_requests(f"{self.api_uri}currencies?fixed_rate={fixed_rate}")
+        resp = self._get_request(f"currencies?fixed_rate={fixed_rate}")
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -340,56 +390,7 @@ class NOWPayments:
         """
         endpoint = "merchant/coins"
         url = self._get_url(endpoint)
-        resp = self._get_requests(url)
-        if resp.status_code == 200:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
-
-
-        :param str ipn_callback_url: Url to receive callbacks, should contain "http" or "https".
-
-        :param str order_id: Inner store order ID.
-
-        :param str order_description: Inner store order description.
-
-        :param int purchase_id: Id of purchase for which you want to create a other payment.
-
-        :param str payout_address: Receive funds on another address.
-
-        :param str payout_currency: Currency of your external payout_address.
-
-        :param int payout_extra_id: Extra id or memo or tag for external payout_address.
-
-        :param bool fixed_rate: Required for fixed-rate exchanges.
-        """
-        endpoint = "invoice"
-        data = PaymentData(
-            price_amount=price_amount,
-            price_currency=price_currency,
-            pay_currency=pay_currency,
-            **kwargs,
-        )
-        url = self._get_url(endpoint)
-        resp = self._post_requests(
-            url, data=data.clean_data_to_dict(is_sandbox=self._IS_SANDBOX)
-        )
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
-
-    def get_payment_status(self, payment_id: int) -> Any:
-        """
-        Get the actual information about the payment.
-
-        :param int payment_id: ID of the payment in the request.
-        """
-        endpoint = f"payment/{payment_id}"
-        url = self._get_url(endpoint)
-        resp: Response = self._get_requests(url)
+        resp = self._get_request(url)
         if resp.status_code == 200:
             return resp.json()
         raise HTTPError(
@@ -397,7 +398,7 @@ class NOWPayments:
         )
 
     def get_minimum_payment_amount(
-        self, currency_from: str, currency_to: str = None, fiat_equivalent: str = None
+            self, currency_from: str, currency_to: str = None, fiat_equivalent: str = None
     ) -> Any:
         """
         Get the minimum payment amount for a specific pair.
@@ -411,7 +412,7 @@ class NOWPayments:
         if fiat_equivalent is not None:
             endpoint += f"&fiat_equivalent={fiat_equivalent}"
         url = self._get_url(endpoint)
-        resp: Response = self._get_requests(url)
+        resp: Response = self._get_request(url)
         if resp.status_code == 200:
             return resp.json()
         raise HTTPError(
