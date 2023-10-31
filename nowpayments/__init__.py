@@ -242,7 +242,6 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs,
         )
-        print(payload.clean_data_to_dict(is_sandbox=self.sandbox))
         resp = self._post_requests(
             f"{self.api_uri}invoice",
             data=payload.clean_data_to_dict(is_sandbox=self.sandbox)
@@ -310,7 +309,8 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs
         )
-        resp = self._post_requests(f"{self.api_uri}invoice-payment", data=data.clean_data_to_dict(is_sandbox=self.sandbox))
+        resp = self._post_requests(f"{self.api_uri}invoice-payment",
+                                   data=data.clean_data_to_dict(is_sandbox=self.sandbox))
         if resp.ok:
             return resp.json()
         raise HTTPError(
