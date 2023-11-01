@@ -2,19 +2,15 @@
 A Python wrapper for the NOWPayments API.
 """
 from typing import Any, Dict, Union
-
 import requests
-
 from nowpayments.models.payment import PaymentData, InvoicePaymentData, InvoiceData
-from requests import Response
-from requests.exceptions import HTTPError
 
 
 class NowPaymentsException(Exception):
     pass
 
 
-class NOWPayments:
+class NOWPaymentsAPI:
     BASE_URI = "https://api.nowpayments.io/v1/"
     BASE_URI_SANDBOX = "https://api-sandbox.nowpayments.io/v1/"
 

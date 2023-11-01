@@ -1,43 +1,92 @@
-# NOWPayments-Python-API
+# NOWPayments API
 
 [![CodeQL](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/codeql-analysis.yml)
 [![codecov](https://codecov.io/gh/Ventura94/NOWPayments-Python-API/branch/main/graph/badge.svg?token=Z7NIDJI2LD)](https://codecov.io/gh/Ventura94/NOWPayments-Python-API)
 [![Black](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/black.yml/badge.svg)](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/black.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
-A Python wrapper for the [NOWPayments API](https://documenter.getpostman.com/view/7907941/S1a32n38?version=latest). 
-
+ 
+A Python wrapper for the [NOWPayments API](https://documenter.getpostman.com/view/7907941/2s93JusNJt), allowing easy integration with the NowPayments platform in Python applications.
 The api call descriptions are from the official documentation.
 
-## Getting Started
-Before using the NOWPayments API, sign up for a [API key here](https://nowpayments.io/).
+## Table of Contents
 
-If you want to use the Sandbox, request your [API key here](https://account-sandbox.nowpayments.io/).
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Status](#project-status)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 
-To install the wrapper, enter the following into the terminal.
+## Installation
+Make sure you have Python and `pip` installed. Install by running:
 ```bash
-pip install nowpayments
+pip install <insert-package-name>
 ```
 
-Every api call requires this api key. Make sure to use this key when getting started. 
-```python
-from nowpayments import NOWPayments
-payment = NOWPayments("API_KEY")
+## Usage
+1. Obtain your NowPayments API key.
+   1. From [NowPayments Dashboard](https://account.nowpayments.io/dashboard) or
+   2. From [NowPayments Sandbox Dashboard](https://account-sandbox.nowpayments.io/dashboard)
 
-status = payment.get_api_status()
-```
-Sandbox is used in the same way in correspondence with the documentation as follows.
+2. Create an instance of the NowPaymentsAPI class based on your API key:
 
 ```python
-from nowpayments import NOWPaymentsSandbox
+# Production
+from nowpayments import NOWPaymentsAPI
 
-payment = NOWPaymentsSandbox("SANDBOX_API_KEY")
-
-status = payment.get_api_status()
+api_key = 'YOUR_API_KEY'
+nowpayments = NOWPaymentsAPI(api_key)
+status = nowpayments.get_api_status()
 ```
 
-## Development
-If you would like to additional development on this package, feel free to do so.
-Fork the repository and contribute.
+```python
+# Sandbox
+from nowpayments import NOWPaymentsAPI
+
+api_key = 'YOUR_SANDBOX_API_KEY'
+nowpayments = NOWPaymentsAPI(api_key)
+status = nowpayments.get_api_status()
+```
+
+## Project Status
+This project is under active development. Below are the implemented API methods
+
+### Auth and API Status
+- [x] GET API Status
+- [x] POST Auth
+
+### Currencies
+- [x] GET Available Currencies
+- [x] GET Available Currencies Full / Detailed 
+- [x] GET Available Currencies Checked
+
+### Payments
+- [x] POST Create invoice
+- [x] POST Create payment
+- [x] POST Create payment by invoice
+- [ ] POST Update payment estimate
+- [x] GET Estimate price
+- [x] GET Payment Status
+- [x] GET List of payments
+- [x] GET Minimum payment amount
+
+### Mass Payout
+TBA
+
+### Conversions
+TBA
+
+### Custody
+TBA
+
+## Documentation
+For more details on available API methods and parameters, refer to the NowPayments API Documentation.
+
+## Contributing
+Contributions are welcome! <br> If you find any issues or have suggestions for improvements, please open an issue or create a pull request.
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
 
