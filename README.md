@@ -1,8 +1,7 @@
 # NOWPayments API
 
-[![CodeQL](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/codeql-analysis.yml)
-[![codecov](https://codecov.io/gh/Ventura94/NOWPayments-Python-API/branch/main/graph/badge.svg?token=Z7NIDJI2LD)](https://codecov.io/gh/Ventura94/NOWPayments-Python-API)
-[![Black](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/black.yml/badge.svg)](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/black.yml)
+[![CodeQL](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tomazmm/nowpayments-api-python/actions/workflows/codeql-analysis.yml)
+[![Black](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/black.yml/badge.svg)](https://github.com/tomazmm/nowpayments-api-python/actions/workflows/black.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
  
 A Python wrapper for the [NOWPayments API](https://documenter.getpostman.com/view/7907941/2s93JusNJt), allowing easy integration with the NowPayments platform in Python applications.
