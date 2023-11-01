@@ -7,7 +7,7 @@ readme = "README.md"
 repository = "https://github.com/tomazmm/nowpayments-api-python"
 license = "MIT"
 packages = [
-    {include = "nowpayments_api", from="/src"}
+    {include = "nowpayments_api", from="src"}
 ]
 
 [tool.poetry.dependencies]
