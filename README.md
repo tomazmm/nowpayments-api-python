@@ -1,6 +1,5 @@
 # NOWPayments API
 
-[![CodeQL](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tomazmm/nowpayments-api-python/actions/workflows/codeql-analysis.yml)
 [![Black](https://github.com/Ventura94/NOWPayments-Python-API/actions/workflows/black.yml/badge.svg)](https://github.com/tomazmm/nowpayments-api-python/actions/workflows/black.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
  
