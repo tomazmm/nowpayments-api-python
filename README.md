@@ -19,7 +19,7 @@ The api call descriptions are from the official documentation.
 ## Installation
 Make sure you have Python and `pip` installed. Install by running:
 ```bash
-pip install <insert-package-name>
+pip install nowpayments-api
 ```
 
 ## Usage
