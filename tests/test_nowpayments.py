@@ -67,15 +67,12 @@ def test_initialization() -> None:
 
 
 # -------------------------
-# /status
+# Auth and API status
 # -------------------------
 def test_get_api_status(now_payments_api_key: NOWPayments) -> None:
     assert now_payments_api_key.get_api_status() == {"message": "OK"}
 
 
-# -------------------------
-# POST /auth
-# -------------------------
 def test_auth(now_payments_email_password: NOWPayments) -> None:
     payload = now_payments_email_password.auth()
     assert "token" in payload
@@ -87,7 +84,7 @@ def test_email_and_password_missing_error(now_payments_api_key: NOWPayments) -> 
 
 
 # -------------------------
-#       PAYMENTS API
+# Payments
 # -------------------------
 def test_get_estimated_price(now_payments_api_key: NOWPayments) -> None:
     response = now_payments_api_key.get_estimated_price(500, "usd", "btc")
@@ -346,7 +343,7 @@ def test_get_payment_status_with_invalid_payment_id_error(now_payments_api_key: 
         now_payments_api_key.get_payment_status(-192385)
 
 
-def test_get_list_fof_payments(now_payments_email_password: NOWPayments) -> None:
+def test_get_list_of_payments(now_payments_email_password: NOWPayments) -> None:
     payment_list = now_payments_email_password.get_list_of_payments()
     assert type(payment_list["data"]) == list
     assert len(payment_list["data"]) <= 10
@@ -359,3 +356,15 @@ def test_get_available_currencies(now_payments_api_key: NOWPayments) -> None:
     response = now_payments_api_key.get_available_currencies()
     assert "currencies" in response
     assert type(response["currencies"]) == list
+
+
+def test_get_available_currencies_full(now_payments_api_key: NOWPayments) -> None:
+    response = now_payments_api_key.get_available_currencies_full()
+    assert "currencies" in response
+    assert type(response["currencies"]) == list
+
+
+def test_get_available_checked_currencies(now_payments_api_key: NOWPayments) -> None:
+    response = now_payments_api_key.get_available_checked_currencies()
+    assert "selectedCurrencies" in response
+    assert type(response["selectedCurrencies"]) == list

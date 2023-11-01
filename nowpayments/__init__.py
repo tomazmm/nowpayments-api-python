@@ -51,7 +51,6 @@ class NOWPayments:
         :param data: Data to which the request is made
         """
         uri = f"{self.api_uri}{endpoint}"
-        print(uri)
         headers = {"x-api-key": self._api_key}
         return self.session.post(url=uri, headers=headers, data=data)
 
@@ -64,11 +63,11 @@ class NOWPayments:
         return f"{self.api_uri}{endpoint}"
 
     # -------------------------
-    # GET /status
+    # Auth an API Status
     # -------------------------
     def get_api_status(self) -> Dict:
-        """
-        https://documenter.getpostman.com/view/7907941/S1a32n38#99Torej98079f-dcc8-4e07-9ac7-3d52f0fd733a
+        """This is a method to get information about the current state of the API. If everything is OK, you will receive
+        an "OK" message. Otherwise, you'll see some error.
         """
         resp = requests.get(f"{self.api_uri}status")
         if resp.ok:
@@ -77,10 +76,16 @@ class NOWPayments:
             f'Error {resp.status_code}: {resp.json().get("message", "No description")}'
         )
 
-    # -------------------------
-    # POST /auth
-    # -------------------------
-    def auth(self):
+    def auth(self) -> Dict:
+        """Authentication method for obtaining a JWT token. You should specify your email and password which you are
+        using for signing in into dashboard. JWT token will be required for creating a payout request. For security
+        reasons, JWT tokens expire in 5 minutes.
+
+        Please note that email and password fields in this request are case-sensitive. test@gmail.com does not equal
+        to Test@gmail.com
+
+        :returns: Dictionary with property "token"
+        """
         if not self._email or not self._password:
             raise NowPaymentsException("Email and password are missing")
         resp = self._post_requests("auth", {
@@ -94,7 +99,7 @@ class NOWPayments:
         )
 
     # -------------------------
-    #       PAYMENTS API
+    # Payments
     # -------------------------
     def get_estimated_price(self, amount: float, currency_from: str, currency_to: str) -> Dict:
         """
@@ -350,14 +355,14 @@ class NOWPayments:
                                 'price_currency',
                                 'pay_amount', 'actually_paid', 'pay_currency', 'order_id', 'order_description',
                                 'purchase_id', 'outcome_amount', 'outcome_currency']
-        if 1 > limit < 500:
+        if 1 > limit or limit > 500:
             raise NowPaymentsException("Limit must be a number between 1 and 500")
         if page < 0:
             raise NowPaymentsException("Page number must be equal or greater than 0")
         if sort_by not in available_sort_paras:
             raise NowPaymentsException("Invalid sort parameter")
         if order_by not in ["asc", "desc"]:
-            raise NowPaymentsException("Invalid sort parameter")
+            raise NowPaymentsException("Invalid order parameter")
 
         endpoint = f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}"
         resp: Response = self._get_request(endpoint, bearer=self.auth())
@@ -368,12 +373,13 @@ class NOWPayments:
         )
 
     # -------------------------
-    #      CURRENCIES API
+    # Currencies
     # -------------------------
     def get_available_currencies(self, fixed_rate: bool = True) -> Dict:
-        """
-        This is a method for obtaining information about all cryptocurrencies available for payments.
-        :param boolean fixed_rate:
+        """This is a method for obtaining information about all cryptocurrencies available for payments for your current
+        setup of payout wallets.
+
+        :param boolean fixed_rate: Returns available currencies with minimum and maximum amount of the exchange.
         """
         resp = self._get_request(f"currencies?fixed_rate={fixed_rate}")
         if resp.ok:
@@ -382,16 +388,20 @@ class NOWPayments:
             f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
         )
 
+    def get_available_currencies_full(self) -> Dict:
+        """This is a method to obtain detailed information about all cryptocurrencies available for payments."""
+        resp = self._get_request(f"full-currencies")
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
+
     def get_available_checked_currencies(self) -> Dict:
-        """
-        This is a method for obtaining information about the cryptocurrencies available
-         for payments. Shows the coins you set as available for payments in the "coins settings"
-          tab on your personal account.
-        """
-        endpoint = "merchant/coins"
-        url = self._get_url(endpoint)
-        resp = self._get_request(url)
-        if resp.status_code == 200:
+        """This is a method for obtaining information about the cryptocurrencies available for payments. Shows the coins
+        you set as available for payments in the "coins settings" tab on your personal account."""
+        resp = self._get_request("merchant/coins")
+        if resp.ok:
             return resp.json()
         raise HTTPError(
             f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
