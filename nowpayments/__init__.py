@@ -38,14 +38,16 @@ class NOWPayments:
     # -------------------------------
     # Request Session Method Wrappers
     # -------------------------------
-    def _get_request(self, endpoint: str, bearer: str = None) -> Response:
+    def _get_request(self, endpoint: str, bearer: str = None) -> Dict:
         uri = f"{self.api_uri}{endpoint}"
         headers = {"x-api-key": self._api_key}
         if bearer:
             headers["Authorization"] = f"Bearer {bearer}"
-        return self.session.get(url=uri, headers=headers)
+        response = self.session.get(url=uri, headers=headers)
+        response.raise_for_status()
+        return response.json()
 
-    def _post_requests(self, endpoint: str, data: Dict = None) -> Response:
+    def _post_requests(self, endpoint: str, data: Dict = None) -> Dict:
         """
         Make get requests with your header and data
 
@@ -54,7 +56,9 @@ class NOWPayments:
         """
         uri = f"{self.api_uri}{endpoint}"
         headers = {"x-api-key": self._api_key}
-        return self.session.post(url=uri, headers=headers, data=data)
+        response = self.session.post(url=uri, headers=headers, data=data)
+        response.raise_for_status()
+        return response.json()
 
     def _get_url(self, endpoint: str) -> str:
         """
@@ -71,12 +75,7 @@ class NOWPayments:
         """This is a method to get information about the current state of the API. If everything is OK, you will receive
         an "OK" message. Otherwise, you'll see some error.
         """
-        resp = requests.get(f"{self.api_uri}status")
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "No description")}'
-        )
+        return self._get_request("status")
 
     def auth(self) -> Dict:
         """Authentication method for obtaining a JWT token. You should specify your email and password which you are
@@ -90,15 +89,10 @@ class NOWPayments:
         """
         if not self._email or not self._password:
             raise NowPaymentsException("Email and password are missing")
-        resp = self._post_requests("auth", {
+        return self._post_requests("auth", {
             "email": self._email,
             "password": self._password
         })
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
 
     # -------------------------
     # Payments
@@ -167,12 +161,7 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs,
         )
-        resp = self._post_requests("payment", data=payload.clean_data_to_dict())
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._post_requests("payment", data=payload.clean_data_to_dict())
 
     def create_invoice(
             self,
@@ -224,12 +213,7 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs,
         )
-        resp = self._post_requests("invoice", data=payload.clean_data_to_dict())
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._post_requests("invoice", data=payload.clean_data_to_dict())
 
     def create_payment_by_invoice(
             self,
@@ -286,12 +270,7 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs
         )
-        resp = self._post_requests("invoice-payment", data=data.clean_data_to_dict())
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._post_requests("invoice-payment", data=data.clean_data_to_dict())
 
     def get_minimum_payment_amount(self, currency_from: str, currency_to: str, **kwargs) -> Any:
         """
@@ -324,12 +303,7 @@ class NOWPayments:
             endpoint += f"&is_fixed_rate={kwargs['is_fixed_rate']}"
         if "is_fee_paid_by_user" in kwargs and type(kwargs["is_fee_paid_by_user"]) is bool:
             endpoint += f"&is_fixed_rate={kwargs['is_fee_paid_by_user']}"
-        resp: Response = self._get_request(endpoint)
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._get_request(endpoint)
 
     def get_estimated_price(self, amount: float, currency_from: str, currency_to: str) -> Dict:
         """
@@ -349,12 +323,7 @@ class NOWPayments:
             raise NowPaymentsException("Unsupported cryptocurrency")
 
         endpoint = f"estimate?amount={amount}&currency_from={currency_from}&currency_to={currency_to}"
-        resp: Response = self._get_request(endpoint)
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._get_request(endpoint)
 
     def get_payment_status(self, payment_id: int) -> Any:
         """
@@ -364,12 +333,7 @@ class NOWPayments:
         """
         if payment_id <= 0:
             raise NowPaymentsException("Payment ID should be greater than zero")
-        resp: Response = self._get_request(f"payment/{payment_id}")
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._get_request(f"payment/{payment_id}")
 
     def get_list_of_payments(self,
                              limit: int = 10,
@@ -404,12 +368,7 @@ class NOWPayments:
 
         endpoint = f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}"
         bearer = self.auth()["token"]
-        resp: Response = self._get_request(endpoint, bearer=bearer)
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._get_request(endpoint, bearer=bearer)
 
     # -------------------------
     # Currencies
@@ -420,28 +379,13 @@ class NOWPayments:
 
         :param boolean fixed_rate: Returns available currencies with minimum and maximum amount of the exchange.
         """
-        resp = self._get_request(f"currencies?fixed_rate={fixed_rate}")
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._get_request(f"currencies?fixed_rate={fixed_rate}")
 
     def get_available_currencies_full(self) -> Dict:
         """This is a method to obtain detailed information about all cryptocurrencies available for payments."""
-        resp = self._get_request(f"full-currencies")
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._get_request(f"full-currencies")
 
     def get_available_checked_currencies(self) -> Dict:
         """This is a method for obtaining information about the cryptocurrencies available for payments. Shows the coins
         you set as available for payments in the "coins settings" tab on your personal account."""
-        resp = self._get_request("merchant/coins")
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
+        return self._get_request("merchant/coins")
