@@ -373,6 +373,30 @@ def test_get_list_of_payments_sort_paras_error(now_payments_email_password: NOWP
         now_payments_email_password.get_list_of_payments(order_by="invalid_order_parameter")
 
 
+def test_get_minimum_payment_amount(now_payments_api_key: NOWPayments) -> None:
+    response = now_payments_api_key.get_minimum_payment_amount("eth", "btc")
+    assert response["currency_from"] == "eth"
+    assert response["currency_to"] == "btc"
+    assert "min_amount" in response
+    assert type(response["min_amount"]) is float
+
+
+def test_get_minimum_payment_amount_with_optional_paras(now_payments_api_key: NOWPayments) -> None:
+    response = now_payments_api_key.get_minimum_payment_amount(
+        "eth",
+        "btc",
+        fiat_equivalent="usd",
+        # is_fixed_rate=True, # Seems like API is broken for this para. API responds always with 400
+        is_fee_paid_by_user=True
+    )
+    assert response["currency_from"] == "eth"
+    assert response["currency_to"] == "btc"
+    assert "min_amount" in response
+    assert type(response["min_amount"]) is float
+    assert "fiat_equivalent" in response
+    assert type(response["fiat_equivalent"]) is float
+
+
 # -------------------------
 # Currencies
 # -------------------------

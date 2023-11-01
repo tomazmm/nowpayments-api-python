@@ -18,6 +18,8 @@ class NOWPayments:
     BASE_URI = "https://api.nowpayments.io/v1/"
     BASE_URI_SANDBOX = "https://api-sandbox.nowpayments.io/v1/"
 
+    AVAILABLE_FIAT = ["usd", "eur", "nzd", "brl", "gbp"]
+
     def __init__(self, api_key: str, email: str = "", password: str = "", sandbox=False) -> None:
         """
         Class construct.
@@ -40,7 +42,7 @@ class NOWPayments:
         uri = f"{self.api_uri}{endpoint}"
         headers = {"x-api-key": self._api_key}
         if bearer:
-            headers["Authorization"] = f"Bearer {bearer['token']}"
+            headers["Authorization"] = f"Bearer {bearer}"
         return self.session.get(url=uri, headers=headers)
 
     def _post_requests(self, endpoint: str, data: Dict = None) -> Response:
@@ -101,31 +103,6 @@ class NOWPayments:
     # -------------------------
     # Payments
     # -------------------------
-    def get_estimated_price(self, amount: float, currency_from: str, currency_to: str) -> Dict:
-        """
-        This is a method for calculating the approximate price in cryptocurrency for a given value in Fiat currency.
-        You will need to provide the initial cost in the Fiat currency (amount, currency_from) and the necessary
-        cryptocurrency (currency_to) Currently following fiat currencies are available: usd, eur, nzd, brl, gbp.
-         :param  float amount: Cost value in fiat currency
-         :param  str currency_from: Fiat currency acronym
-         :param  str currency_to: Cryptocurrency.
-         :return:
-        """
-        if amount <= 0:
-            raise NowPaymentsException("Amount must be greater than 0")
-        if currency_from not in ["usd", "eur", "nzd", "brl", "gbp"]:
-            raise NowPaymentsException("Unsupported fiat currency")
-        if currency_to not in self.get_available_currencies()["currencies"]:
-            raise NowPaymentsException("Unsupported cryptocurrency")
-
-        endpoint = f"estimate?amount={amount}&currency_from={currency_from}&currency_to={currency_to}"
-        resp: Response = self._get_request(endpoint)
-        if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
-
     def create_payment(
             self,
             price_amount: float,
@@ -179,7 +156,7 @@ class NOWPayments:
         """
         if price_amount <= 0:
             raise NowPaymentsException("Amount must be greater than 0")
-        if price_currency not in ["usd", "eur", "nzd", "brl", "gbp"]:
+        if price_currency not in self.AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
         if pay_currency not in self.get_available_currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
@@ -190,7 +167,7 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs,
         )
-        resp = self._post_requests("payment", data=payload.clean_data_to_dict(is_sandbox=self.sandbox))
+        resp = self._post_requests("payment", data=payload.clean_data_to_dict())
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -237,7 +214,7 @@ class NOWPayments:
         """
         if price_amount <= 0:
             raise NowPaymentsException("Amount must be greater than 0")
-        if price_currency not in ["usd", "eur", "nzd", "brl", "gbp"]:
+        if price_currency not in self.AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
         if pay_currency not in self.get_available_currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
@@ -247,7 +224,7 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs,
         )
-        resp = self._post_requests("invoice", data=payload.clean_data_to_dict(is_sandbox=self.sandbox))
+        resp = self._post_requests("invoice", data=payload.clean_data_to_dict())
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -260,12 +237,11 @@ class NOWPayments:
             pay_currency: str,
             **kwargs: Union[str, str, int, str]
     ) -> Dict:
-        """
-        Creates payment by invoice. With this method, your customer will be able to complete the payment without leaving your website.
+        """Creates payment by invoice. With this method, your customer will be able to complete the payment without leaving your website.
         Data must be sent as a JSON-object payload.
         Required request fields:
 
-        :param int iid: invoice id
+        :param int invoice_id: Invoice id
         :param str pay_currency: The cryptocurrency in which the pay_amount is specified (btc, eth, etc).
             NOTE: some of the currencies require a Memo, Destination Tag, etc., to complete a payment  (AVA, EOS,
             BNBMAINNET, XLM, XRP). This is unique for each payment. This ID is received in “payin_extra_id” parameter of
@@ -302,8 +278,7 @@ class NOWPayments:
           "time_limit": null,
           "burning_percent": null,
           "expiration_estimate_date": "2020-12-23T15:00:22.742Z"
-        }
-        """
+        }"""
         if pay_currency not in self.get_available_currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
         data = InvoicePaymentData(
@@ -311,7 +286,70 @@ class NOWPayments:
             pay_currency=pay_currency,
             **kwargs
         )
-        resp = self._post_requests("invoice-payment", data=data.clean_data_to_dict(is_sandbox=self.sandbox))
+        resp = self._post_requests("invoice-payment", data=data.clean_data_to_dict())
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
+
+    def get_minimum_payment_amount(self, currency_from: str, currency_to: str, **kwargs) -> Any:
+        """
+        Get the minimum payment amount for a specific pair.
+        You can provide both currencies in the pair or just currency_from, and we will calculate the minimum payment
+        amount for currency_from and currency which you have specified as the outcome in the Payment Settings.
+        You can also specify one of the fiat currencies in the currency_from. In this case, the minimum payment will
+        be calculated in this fiat currency.
+
+        You can also add field fiat_equivalent (optional field) to get the fiat equivalent of the minimum amount.
+
+        "is_fixed_rate", and "is_fee_paid_by_user" parameters allows you to see current minimal amounts for
+        corresponsing flows (it may differ from the standard flow!)
+
+        In the case of several outcome wallets we will calculate the minimum amount in the same way we route your
+        payment to a specific wallet.
+
+        :param string currency_from: Paying currency
+        :param string currency_to: Outcome currency
+        :param string fiat_equivalent: Mentioning ticker of any supported fiat currency you can get fiat equivalent of
+            calculated minimal amount
+        :param string is_fixed_rate: Set this as true if you're using fixed rate flow
+        :param string is_fee_paid_by_user:  Set this as true if you're using fee paid by user flow
+
+        """
+        endpoint = f"min-amount?currency_from={currency_from}&currency_to={currency_to}"
+        if "fiat_equivalent" in kwargs and kwargs["fiat_equivalent"] in self.AVAILABLE_FIAT:
+            endpoint += f"&fiat_equivalent={kwargs['fiat_equivalent']}"
+        if "is_fixed_rate" in kwargs and type(kwargs["is_fixed_rate"]) is bool:
+            endpoint += f"&is_fixed_rate={kwargs['is_fixed_rate']}"
+        if "is_fee_paid_by_user" in kwargs and type(kwargs["is_fee_paid_by_user"]) is bool:
+            endpoint += f"&is_fixed_rate={kwargs['is_fee_paid_by_user']}"
+        resp: Response = self._get_request(endpoint)
+        if resp.ok:
+            return resp.json()
+        raise HTTPError(
+            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
+        )
+
+    def get_estimated_price(self, amount: float, currency_from: str, currency_to: str) -> Dict:
+        """
+        This is a method for calculating the approximate price in cryptocurrency for a given value in Fiat currency.
+        You will need to provide the initial cost in the Fiat currency (amount, currency_from) and the necessary
+        cryptocurrency (currency_to) Currently following fiat currencies are available: usd, eur, nzd, brl, gbp.
+         :param  float amount: Cost value in fiat currency
+         :param  str currency_from: Fiat currency acronym
+         :param  str currency_to: Cryptocurrency.
+         :return:
+        """
+        if amount <= 0:
+            raise NowPaymentsException("Amount must be greater than 0")
+        if currency_from not in self.AVAILABLE_FIAT:
+            raise NowPaymentsException("Unsupported fiat currency")
+        if currency_to not in self.get_available_currencies()["currencies"]:
+            raise NowPaymentsException("Unsupported cryptocurrency")
+
+        endpoint = f"estimate?amount={amount}&currency_from={currency_from}&currency_to={currency_to}"
+        resp: Response = self._get_request(endpoint)
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -365,7 +403,8 @@ class NOWPayments:
             raise NowPaymentsException("Invalid order parameter")
 
         endpoint = f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}"
-        resp: Response = self._get_request(endpoint, bearer=self.auth())
+        bearer = self.auth()["token"]
+        resp: Response = self._get_request(endpoint, bearer=bearer)
         if resp.ok:
             return resp.json()
         raise HTTPError(
@@ -402,28 +441,6 @@ class NOWPayments:
         you set as available for payments in the "coins settings" tab on your personal account."""
         resp = self._get_request("merchant/coins")
         if resp.ok:
-            return resp.json()
-        raise HTTPError(
-            f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'
-        )
-
-    def get_minimum_payment_amount(
-            self, currency_from: str, currency_to: str = None, fiat_equivalent: str = None
-    ) -> Any:
-        """
-        Get the minimum payment amount for a specific pair.
-
-        :param currency_from: Currency from
-        :param currency_to: Currency to
-        """
-        endpoint = self._MIN_AMOUNT_URL.format(currency_from)
-        if currency_to is not None:
-            endpoint += f"&currency_to={currency_to}"
-        if fiat_equivalent is not None:
-            endpoint += f"&fiat_equivalent={fiat_equivalent}"
-        url = self._get_url(endpoint)
-        resp: Response = self._get_request(url)
-        if resp.status_code == 200:
             return resp.json()
         raise HTTPError(
             f'Error {resp.status_code}: {resp.json().get("message", "Not descriptions")}'

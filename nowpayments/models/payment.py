@@ -8,9 +8,7 @@ from typing import Dict, Union
 
 @dataclass
 class Base:
-    def clean_data_to_dict(
-            self, is_sandbox: bool = False
-    ) -> Dict[str, Union[str, float, int]]:
+    def clean_data_to_dict(self) -> Dict[str, Union[str, float, int]]:
         """
         Delete None types and return dictionary
         """
@@ -48,7 +46,7 @@ class InvoiceData(Base):
     """
     price_amount: float
     price_currency: str
-    pay_currency: float
+    pay_currency: str
     ipn_callback_url: str = None
     order_id: str = None  # User can get notified, when payment is received
     order_description: str = None
