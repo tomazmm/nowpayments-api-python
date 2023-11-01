@@ -1,13 +1,9 @@
 """Testing Module"""
-import json
-import os
 
 import dotenv
 import pytest
-from pytest_mock.plugin import MockerFixture
-from requests.exceptions import HTTPError
 
-from nowpayments import NOWPaymentsAPI, NowPaymentsException
+from nowpayments_api import NOWPaymentsAPI, NowPaymentsException
 
 config = dotenv.dotenv_values()
 

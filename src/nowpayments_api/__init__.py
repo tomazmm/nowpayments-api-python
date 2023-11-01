@@ -3,7 +3,7 @@ A Python wrapper for the NOWPayments API.
 """
 from typing import Any, Dict, Union
 import requests
-from nowpayments.models.payment import PaymentData, InvoicePaymentData, InvoiceData
+from .models.payment import PaymentData, InvoicePaymentData, InvoiceData
 
 
 class NowPaymentsException(Exception):
@@ -22,14 +22,12 @@ class NOWPaymentsAPI:
 
         :param str api_key: API key
         """
-
         self.api_uri = self.BASE_URI if not sandbox else self.BASE_URI_SANDBOX
-
-        self.session = requests.Session()
         self._api_key = api_key
         self._email = email
         self._password = password
         self.sandbox = sandbox
+        self.session = requests.Session()
 
     # -------------------------------
     # Request Session Method Wrappers

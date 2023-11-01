@@ -1,17 +1,18 @@
 [tool.poetry]
-name = "nowpayments"
-version = "1.3.3"
-description = "A Python wrapper for the NOWPayments API"
-authors = ["Arian Ventura Rodríguez <arianventura94@gmail.com>"]
+name = "nowpayments-api"
+version = "1.0.0"
+description = "A Python wrapper for the NOWPayments API."
+authors = ["Tomaž Mesarec <tomaz.mesarec@gmail.com>", "Arian Ventura Rodríguez <arianventura94@gmail.com>"]
 readme = "README.md"
-repository = "https://github.com/Ventura94/NOWPayments-Python-API"
+repository = "https://github.com/tomazmm/nowpayments-api-python"
 license = "MIT"
-
+packages = [
+    {include = "nowpayments_api", from="/src"}
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
 requests = "^2.28.1"
-
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.2.0"
@@ -20,3 +21,6 @@ pytest-mock = "^3.10.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
