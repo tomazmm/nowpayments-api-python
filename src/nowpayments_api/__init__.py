@@ -16,7 +16,9 @@ class NOWPaymentsAPI:
 
     AVAILABLE_FIAT = ["usd", "eur", "nzd", "brl", "gbp"]
 
-    def __init__(self, api_key: str, email: str = "", password: str = "", sandbox=False) -> None:
+    def __init__(
+        self, api_key: str, email: str = "", password: str = "", sandbox=False
+    ) -> None:
         """
         Class construct.
 
@@ -83,20 +85,19 @@ class NOWPaymentsAPI:
         """
         if not self._email or not self._password:
             raise NowPaymentsException("Email and password are missing")
-        return self._post_requests("auth", {
-            "email": self._email,
-            "password": self._password
-        })
+        return self._post_requests(
+            "auth", {"email": self._email, "password": self._password}
+        )
 
     # -------------------------
     # Payments
     # -------------------------
     def create_payment(
-            self,
-            price_amount: float,
-            price_currency: str,
-            pay_currency: str,
-            **kwargs: Union[str, float, bool, int],
+        self,
+        price_amount: float,
+        price_currency: str,
+        pay_currency: str,
+        **kwargs: Union[str, float, bool, int],
     ) -> Dict:
         """
         With this method, your customer will be able to complete the payment without leaving your website.
@@ -158,11 +159,11 @@ class NOWPaymentsAPI:
         return self._post_requests("payment", data=payload.clean_data_to_dict())
 
     def create_invoice(
-            self,
-            price_amount: float,
-            price_currency: str,
-            pay_currency: str,
-            **kwargs: Union[str, float, bool, int],
+        self,
+        price_amount: float,
+        price_currency: str,
+        pay_currency: str,
+        **kwargs: Union[str, float, bool, int],
     ) -> Dict:
         """
         Creates an invoice. With this method, the customer is required to follow the generated url to complete the payment. Data must be sent as a JSON-object payload.
@@ -210,10 +211,7 @@ class NOWPaymentsAPI:
         return self._post_requests("invoice", data=payload.clean_data_to_dict())
 
     def create_payment_by_invoice(
-            self,
-            invoice_id: int,
-            pay_currency: str,
-            **kwargs: Union[str, str, int, str]
+        self, invoice_id: int, pay_currency: str, **kwargs: Union[str, str, int, str]
     ) -> Dict:
         """Creates payment by invoice. With this method, your customer will be able to complete the payment without leaving your website.
         Data must be sent as a JSON-object payload.
@@ -259,14 +257,12 @@ class NOWPaymentsAPI:
         }"""
         if pay_currency not in self.get_available_currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
-        data = InvoicePaymentData(
-            iid=invoice_id,
-            pay_currency=pay_currency,
-            **kwargs
-        )
+        data = InvoicePaymentData(iid=invoice_id, pay_currency=pay_currency, **kwargs)
         return self._post_requests("invoice-payment", data=data.clean_data_to_dict())
 
-    def get_minimum_payment_amount(self, currency_from: str, currency_to: str, **kwargs) -> Any:
+    def get_minimum_payment_amount(
+        self, currency_from: str, currency_to: str, **kwargs
+    ) -> Any:
         """
         Get the minimum payment amount for a specific pair.
         You can provide both currencies in the pair or just currency_from, and we will calculate the minimum payment
@@ -291,15 +287,23 @@ class NOWPaymentsAPI:
 
         """
         endpoint = f"min-amount?currency_from={currency_from}&currency_to={currency_to}"
-        if "fiat_equivalent" in kwargs and kwargs["fiat_equivalent"] in self.AVAILABLE_FIAT:
+        if (
+            "fiat_equivalent" in kwargs
+            and kwargs["fiat_equivalent"] in self.AVAILABLE_FIAT
+        ):
             endpoint += f"&fiat_equivalent={kwargs['fiat_equivalent']}"
         if "is_fixed_rate" in kwargs and type(kwargs["is_fixed_rate"]) is bool:
             endpoint += f"&is_fixed_rate={kwargs['is_fixed_rate']}"
-        if "is_fee_paid_by_user" in kwargs and type(kwargs["is_fee_paid_by_user"]) is bool:
+        if (
+            "is_fee_paid_by_user" in kwargs
+            and type(kwargs["is_fee_paid_by_user"]) is bool
+        ):
             endpoint += f"&is_fixed_rate={kwargs['is_fee_paid_by_user']}"
         return self._get_request(endpoint)
 
-    def get_estimated_price(self, amount: float, currency_from: str, currency_to: str) -> Dict:
+    def get_estimated_price(
+        self, amount: float, currency_from: str, currency_to: str
+    ) -> Dict:
         """
         This is a method for calculating the approximate price in cryptocurrency for a given value in Fiat currency.
         You will need to provide the initial cost in the Fiat currency (amount, currency_from) and the necessary
@@ -329,12 +333,13 @@ class NOWPaymentsAPI:
             raise NowPaymentsException("Payment ID should be greater than zero")
         return self._get_request(f"payment/{payment_id}")
 
-    def get_list_of_payments(self,
-                             limit: int = 10,
-                             page: int = 0,
-                             sort_by: str = "created_at",
-                             order_by: str = "asc"
-                             ) -> Any:
+    def get_list_of_payments(
+        self,
+        limit: int = 10,
+        page: int = 0,
+        sort_by: str = "created_at",
+        order_by: str = "asc",
+    ) -> Any:
         """
         Returns the entire list of all transactions, created with certain API key.
 
@@ -347,10 +352,22 @@ class NOWPaymentsAPI:
             (possible values: asc, desc)
 
         """
-        available_sort_paras = ['created_at', 'payment_id', 'payment_status', 'pay_address', 'price_amount',
-                                'price_currency',
-                                'pay_amount', 'actually_paid', 'pay_currency', 'order_id', 'order_description',
-                                'purchase_id', 'outcome_amount', 'outcome_currency']
+        available_sort_paras = [
+            "created_at",
+            "payment_id",
+            "payment_status",
+            "pay_address",
+            "price_amount",
+            "price_currency",
+            "pay_amount",
+            "actually_paid",
+            "pay_currency",
+            "order_id",
+            "order_description",
+            "purchase_id",
+            "outcome_amount",
+            "outcome_currency",
+        ]
         if 1 > limit or limit > 500:
             raise NowPaymentsException("Limit must be a number between 1 and 500")
         if page < 0:
@@ -360,7 +377,9 @@ class NOWPaymentsAPI:
         if order_by not in ["asc", "desc"]:
             raise NowPaymentsException("Invalid order parameter")
 
-        endpoint = f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}"
+        endpoint = (
+            f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}"
+        )
         bearer = self.auth()["token"]
         return self._get_request(endpoint, bearer=bearer)
 
@@ -381,5 +400,6 @@ class NOWPaymentsAPI:
 
     def get_available_checked_currencies(self) -> Dict:
         """This is a method for obtaining information about the cryptocurrencies available for payments. Shows the coins
-        you set as available for payments in the "coins settings" tab on your personal account."""
+        you set as available for payments in the "coins settings" tab on your personal account.
+        """
         return self._get_request("merchant/coins")

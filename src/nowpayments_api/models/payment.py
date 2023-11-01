@@ -24,6 +24,7 @@ class PaymentData(Base):  # pylint: disable=too-many-instance-attributes
     """
     The PaymentData class is a container for the data that is used to make a payment.
     """
+
     price_amount: float
     price_currency: str
     pay_currency: str
@@ -44,6 +45,7 @@ class InvoiceData(Base):
     """
     The InvoiceData class is a container for the data that is used to make a invoice.
     """
+
     price_amount: float
     price_currency: str
     pay_currency: str
@@ -59,6 +61,7 @@ class InvoicePaymentData(Base):
     """
     The InvoicePaymentData class is a container for the data that is used to make a payment by invoice.
     """
+
     iid: int
     pay_currency: str
     order_description: str = None
