@@ -349,8 +349,32 @@ def test_get_list_of_payments(now_payments_email_password: NOWPayments) -> None:
     assert len(payment_list["data"]) <= 10
 
 
+def test_get_list_of_payments_limit_error(now_payments_email_password: NOWPayments) -> None:
+    with pytest.raises(NowPaymentsException, match="Limit must be a number between 1 and 500"):
+        now_payments_email_password.get_list_of_payments(0)
+    with pytest.raises(NowPaymentsException, match="Limit must be a number between 1 and 500"):
+        now_payments_email_password.get_list_of_payments(-5)
+    with pytest.raises(NowPaymentsException, match="Limit must be a number between 1 and 500"):
+        now_payments_email_password.get_list_of_payments(501)
+
+
+def test_get_list_of_payments_page_error(now_payments_email_password: NOWPayments) -> None:
+    with pytest.raises(NowPaymentsException, match="Page number must be equal or greater than 0"):
+        now_payments_email_password.get_list_of_payments(page=-1)
+
+
+def test_get_list_of_payments_sort_paras_error(now_payments_email_password: NOWPayments) -> None:
+    with pytest.raises(NowPaymentsException, match="Invalid sort parameter"):
+        now_payments_email_password.get_list_of_payments(sort_by="invalid_sort_parameter")
+
+
+def test_get_list_of_payments_sort_paras_error(now_payments_email_password: NOWPayments) -> None:
+    with pytest.raises(NowPaymentsException, match="Invalid order parameter"):
+        now_payments_email_password.get_list_of_payments(order_by="invalid_order_parameter")
+
+
 # -------------------------
-#       Currencies API
+# Currencies
 # -------------------------
 def test_get_available_currencies(now_payments_api_key: NOWPayments) -> None:
     response = now_payments_api_key.get_available_currencies()
