@@ -20,6 +20,9 @@ class NOWPaymentsAPI:
     BASE_URI = "https://api.nowpayments.io/v1/"
     BASE_URI_SANDBOX = "https://api-sandbox.nowpayments.io/v1/"
 
+    WEB_APP_PAYMENT_URI = "https://nowpayments.io/payment/"
+    WEB_APP_PAYMENT_URI_SANDBOX = "https://sandbox.nowpayments.io/payment/"
+
     def __init__(
         self, api_key: str, email: str = "", password: str = "", sandbox=False
     ) -> None:
@@ -29,6 +32,12 @@ class NOWPaymentsAPI:
         :param str api_key: API key
         """
         self.api_uri = self.BASE_URI if not sandbox else self.BASE_URI_SANDBOX
+        self.web_payment_uri = (
+            self.WEB_APP_PAYMENT_URI
+            if not sandbox
+            else self.WEB_APP_PAYMENT_URI_SANDBOX
+        )
+
         self._api_key = api_key
         self._email = email
         self._password = password
@@ -255,7 +264,12 @@ class NOWPaymentsAPI:
         if pay_currency not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
         data = InvoicePaymentData(iid=invoice_id, pay_currency=pay_currency, **kwargs)
-        return self._post_requests("invoice-payment", data=data.clean_data_to_dict())
+        response = self._post_requests(
+            "invoice-payment", data=data.clean_data_to_dict()
+        )
+        uri = f"{self.web_payment_uri}?iid={invoice_id}&paymentId={response['payment_id']}"
+        response["uri"] = uri
+        return response
 
     def minimum_payment_amount(
         self, currency_from: str, currency_to: str, **kwargs

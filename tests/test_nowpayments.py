@@ -1,4 +1,5 @@
 """Testing Module"""
+import datetime
 
 import dotenv
 import pytest
@@ -37,6 +38,7 @@ def test_initialization() -> None:
     now_payments = NOWPaymentsAPI(api_key=config["API_KEY"])
     assert now_payments.sandbox is False
     assert now_payments.api_uri == "https://api.nowpayments.io/v1/"
+    assert now_payments.web_payment_uri == "https://nowpayments.io/payment/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == ""
     assert now_payments._password == ""
@@ -46,6 +48,7 @@ def test_initialization() -> None:
     )
     assert now_payments.sandbox is False
     assert now_payments.api_uri == "https://api.nowpayments.io/v1/"
+    assert now_payments.web_payment_uri == "https://nowpayments.io/payment/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == config["EMAIL"]
     assert now_payments._password == config["PASSWORD"]
@@ -53,6 +56,7 @@ def test_initialization() -> None:
     now_payments = NOWPaymentsAPI(api_key=config["API_KEY"], sandbox=True)
     assert now_payments.sandbox is True
     assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/"
+    assert now_payments.web_payment_uri == "https://sandbox.nowpayments.io/payment/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == ""
     assert now_payments._password == ""
@@ -65,6 +69,7 @@ def test_initialization() -> None:
     )
     assert now_payments.sandbox is True
     assert now_payments.api_uri == "https://api-sandbox.nowpayments.io/v1/"
+    assert now_payments.web_payment_uri == "https://sandbox.nowpayments.io/payment/"
     assert now_payments._api_key == config["API_KEY"]
     assert now_payments._email == config["EMAIL"]
     assert now_payments._password == config["PASSWORD"]
@@ -286,6 +291,11 @@ def test_create_payment_by_invoice(now_payments_api_key: NOWPaymentsAPI) -> None
     response = now_payments_api_key.create_payment_by_invoice(invoice["id"], "btc")
     assert "payment_id" in response
     assert response["payment_status"] == "waiting"
+    assert "uri" in response
+    assert (
+        response["uri"]
+        == f"{now_payments_api_key.web_payment_uri}?iid={invoice['id']}&paymentId={response['payment_id']}"
+    )
     assert "pay_address" in response
     assert response["price_amount"] == 100
     assert response["price_currency"] == "usd"
