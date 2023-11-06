@@ -85,6 +85,6 @@ For more details on available API methods and parameters, refer to the NowPaymen
 Contributions are welcome! <br> If you find any issues or have suggestions for improvements, please open an issue or create a pull request.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
