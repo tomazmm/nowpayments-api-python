@@ -56,18 +56,10 @@ class NOWPaymentsAPI:
         response.raise_for_status()
         return response.json()
 
-    def _get_url(self, endpoint: str) -> str:
-        """
-        Set the url to be used
-
-        :param str endpoint: Endpoint to be used
-        """
-        return f"{self.api_uri}{endpoint}"
-
     # -------------------------
     # Auth an API Status
     # -------------------------
-    def get_api_status(self) -> Dict:
+    def status(self) -> Dict:
         """This is a method to get information about the current state of the API. If everything is OK, you will receive
         an "OK" message. Otherwise, you'll see some error.
         """
@@ -147,7 +139,7 @@ class NOWPaymentsAPI:
             raise NowPaymentsException("Amount must be greater than 0")
         if price_currency not in self.AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
-        if pay_currency not in self.get_available_currencies()["currencies"]:
+        if pay_currency not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
 
         payload = PaymentData(
@@ -200,7 +192,7 @@ class NOWPaymentsAPI:
             raise NowPaymentsException("Amount must be greater than 0")
         if price_currency not in self.AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
-        if pay_currency not in self.get_available_currencies()["currencies"]:
+        if pay_currency not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
         payload = InvoiceData(
             price_amount=price_amount,
@@ -255,12 +247,12 @@ class NOWPaymentsAPI:
           "burning_percent": null,
           "expiration_estimate_date": "2020-12-23T15:00:22.742Z"
         }"""
-        if pay_currency not in self.get_available_currencies()["currencies"]:
+        if pay_currency not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
         data = InvoicePaymentData(iid=invoice_id, pay_currency=pay_currency, **kwargs)
         return self._post_requests("invoice-payment", data=data.clean_data_to_dict())
 
-    def get_minimum_payment_amount(
+    def minimum_payment_amount(
         self, currency_from: str, currency_to: str, **kwargs
     ) -> Any:
         """
@@ -301,7 +293,7 @@ class NOWPaymentsAPI:
             endpoint += f"&is_fixed_rate={kwargs['is_fee_paid_by_user']}"
         return self._get_request(endpoint)
 
-    def get_estimated_price(
+    def estimate_price(
         self, amount: float, currency_from: str, currency_to: str
     ) -> Dict:
         """
@@ -317,13 +309,13 @@ class NOWPaymentsAPI:
             raise NowPaymentsException("Amount must be greater than 0")
         if currency_from not in self.AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
-        if currency_to not in self.get_available_currencies()["currencies"]:
+        if currency_to not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
 
         endpoint = f"estimate?amount={amount}&currency_from={currency_from}&currency_to={currency_to}"
         return self._get_request(endpoint)
 
-    def get_payment_status(self, payment_id: int) -> Any:
+    def payment_status(self, payment_id: int) -> Any:
         """
         Get the actual information about the payment.
 
@@ -333,7 +325,7 @@ class NOWPaymentsAPI:
             raise NowPaymentsException("Payment ID should be greater than zero")
         return self._get_request(f"payment/{payment_id}")
 
-    def get_list_of_payments(
+    def list_of_payments(
         self,
         limit: int = 10,
         page: int = 0,
@@ -386,7 +378,7 @@ class NOWPaymentsAPI:
     # -------------------------
     # Currencies
     # -------------------------
-    def get_available_currencies(self, fixed_rate: bool = True) -> Dict:
+    def currencies(self, fixed_rate: bool = True) -> Dict:
         """This is a method for obtaining information about all cryptocurrencies available for payments for your current
         setup of payout wallets.
 
@@ -394,11 +386,11 @@ class NOWPaymentsAPI:
         """
         return self._get_request(f"currencies?fixed_rate={fixed_rate}")
 
-    def get_available_currencies_full(self) -> Dict:
+    def currencies_full(self) -> Dict:
         """This is a method to obtain detailed information about all cryptocurrencies available for payments."""
         return self._get_request(f"full-currencies")
 
-    def get_available_checked_currencies(self) -> Dict:
+    def currencies_checked(self) -> Dict:
         """This is a method for obtaining information about the cryptocurrencies available for payments. Shows the coins
         you set as available for payments in the "coins settings" tab on your personal account.
         """

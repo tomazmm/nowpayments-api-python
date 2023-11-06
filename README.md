@@ -35,7 +35,7 @@ from nowpayments_api import NOWPaymentsAPI
 
 api_key = 'YOUR_API_KEY'
 nowpayments = NOWPaymentsAPI(api_key)
-status = nowpayments.get_api_status()
+status = nowpayments.status()
 ```
 
 ```python
@@ -44,7 +44,7 @@ from nowpayments_api import NOWPaymentsAPI
 
 api_key = 'YOUR_SANDBOX_API_KEY'
 nowpayments = NOWPaymentsAPI(api_key, sandbox=True)
-status = nowpayments.get_api_status()
+status = nowpayments.status()
 ```
 
 ## Project Status
