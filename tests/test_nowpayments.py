@@ -461,7 +461,7 @@ def test_update_payment_estimate(now_payments_api_key: NOWPaymentsAPI) -> None:
     payment = now_payments_api_key.create_payment(
         100, price_currency="usd", pay_currency="btc"
     )
-    response = now_payments_api_key.update_payment_estimate(payment["payment_id"])
+    response = now_payments_api_key.update_payment_estimate(int(payment["payment_id"] ))
     assert response["id"] == int(payment["payment_id"])
     assert "token_id" in response
     assert "pay_amount" in response
