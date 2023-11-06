@@ -63,7 +63,7 @@ This project is under active development. Below are the implemented API methods
 - [x] POST Create invoice
 - [x] POST Create payment
 - [x] POST Create payment by invoice
-- [ ] POST Update payment estimate
+- [x] POST Update payment estimate
 - [x] GET Estimate price
 - [x] GET Payment Status
 - [x] GET List of payments

@@ -2,6 +2,7 @@
 
 import dotenv
 import pytest
+from requests import HTTPError
 
 from nowpayments_api import NOWPaymentsAPI, NowPaymentsException
 
@@ -140,7 +141,7 @@ def test_create_payment(now_payments_api_key: NOWPaymentsAPI) -> None:
 
 
 def test_create_payment_with_optional_paras(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     price = now_payments_api_key.estimate_price(100, "usd", "eth")
     response = now_payments_api_key.create_payment(
@@ -182,7 +183,7 @@ def test_create_payment_with_optional_paras(
 
 
 def test_create_payment_with_unexpected_keyword_argument_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(TypeError):
         now_payments_api_key.create_payment(
@@ -194,21 +195,21 @@ def test_create_payment_with_unexpected_keyword_argument_error(
 
 
 def test_create_payment_with_invalid_amount_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Amount must be greater than 0"):
         now_payments_api_key.estimate_price(0, "usd", "btc")
 
 
 def test_create_payment_with_unsupported_fiat_currency_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported fiat currency"):
         now_payments_api_key.estimate_price(1, "ustr", "btc")
 
 
 def test_create_payment_with_unsupported_cryptocurrency_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported cryptocurrency"):
         now_payments_api_key.estimate_price(1, "usd", "btccc")
@@ -231,7 +232,7 @@ def test_create_invoice(now_payments_api_key: NOWPaymentsAPI) -> None:
 
 
 def test_create_invoice_with_optional_paras(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     response = now_payments_api_key.create_invoice(
         100,
@@ -258,7 +259,7 @@ def test_create_invoice_with_optional_paras(
 
 
 def test_create_invoice_with_invalid_amount_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Amount must be greater than 0"):
         now_payments_api_key.create_invoice(0, "usd", "btc")
@@ -267,14 +268,14 @@ def test_create_invoice_with_invalid_amount_error(
 
 
 def test_create_invoice_with_unsupported_fiat_currency_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported fiat currency"):
         now_payments_api_key.create_invoice(1, "ustr", "btc")
 
 
 def test_create_invoice_with_unsupported_cryptocurrency_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Unsupported cryptocurrency"):
         now_payments_api_key.create_invoice(1, "usd", "btccc")
@@ -307,7 +308,7 @@ def test_create_payment_by_invoice(now_payments_api_key: NOWPaymentsAPI) -> None
 
 
 def test_create_payment_by_invoice_with_optional_paras(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     invoice = now_payments_api_key.create_invoice(100, "usd", "btc")
     response = now_payments_api_key.create_payment_by_invoice(invoice["id"], "btc")
@@ -335,7 +336,7 @@ def test_create_payment_by_invoice_with_optional_paras(
 
 
 def test_create_payment_by_invoice_with_unsupported_cryptocurrency_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     invoice = now_payments_api_key.create_invoice(100, "usd", "btc")
     with pytest.raises(NowPaymentsException, match="Unsupported cryptocurrency"):
@@ -368,14 +369,14 @@ def test_get_payment_status(now_payments_api_key: NOWPaymentsAPI) -> None:
 
 
 def test_get_payment_status_with_invalid_payment_id_error(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(
-        NowPaymentsException, match="Payment ID should be greater than zero"
+            NowPaymentsException, match="Payment ID should be greater than zero"
     ):
         now_payments_api_key.payment_status(0)
     with pytest.raises(
-        NowPaymentsException, match="Payment ID should be greater than zero"
+            NowPaymentsException, match="Payment ID should be greater than zero"
     ):
         now_payments_api_key.payment_status(-192385)
 
@@ -387,33 +388,33 @@ def test_get_list_of_payments(now_payments_email_password: NOWPaymentsAPI) -> No
 
 
 def test_get_list_of_payments_limit_error(
-    now_payments_email_password: NOWPaymentsAPI,
+        now_payments_email_password: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(
-        NowPaymentsException, match="Limit must be a number between 1 and 500"
+            NowPaymentsException, match="Limit must be a number between 1 and 500"
     ):
         now_payments_email_password.list_of_payments(0)
     with pytest.raises(
-        NowPaymentsException, match="Limit must be a number between 1 and 500"
+            NowPaymentsException, match="Limit must be a number between 1 and 500"
     ):
         now_payments_email_password.list_of_payments(-5)
     with pytest.raises(
-        NowPaymentsException, match="Limit must be a number between 1 and 500"
+            NowPaymentsException, match="Limit must be a number between 1 and 500"
     ):
         now_payments_email_password.list_of_payments(501)
 
 
 def test_get_list_of_payments_page_error(
-    now_payments_email_password: NOWPaymentsAPI,
+        now_payments_email_password: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(
-        NowPaymentsException, match="Page number must be equal or greater than 0"
+            NowPaymentsException, match="Page number must be equal or greater than 0"
     ):
         now_payments_email_password.list_of_payments(page=-1)
 
 
 def test_get_list_of_payments_sort_paras_error(
-    now_payments_email_password: NOWPaymentsAPI,
+        now_payments_email_password: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Invalid sort parameter"):
         now_payments_email_password.list_of_payments(
@@ -422,7 +423,7 @@ def test_get_list_of_payments_sort_paras_error(
 
 
 def test_get_list_of_payments_sort_paras_error(
-    now_payments_email_password: NOWPaymentsAPI,
+        now_payments_email_password: NOWPaymentsAPI,
 ) -> None:
     with pytest.raises(NowPaymentsException, match="Invalid order parameter"):
         now_payments_email_password.list_of_payments(
@@ -439,13 +440,13 @@ def test_get_minimum_payment_amount(now_payments_api_key: NOWPaymentsAPI) -> Non
 
 
 def test_get_minimum_payment_amount_with_optional_paras(
-    now_payments_api_key: NOWPaymentsAPI,
+        now_payments_api_key: NOWPaymentsAPI,
 ) -> None:
     response = now_payments_api_key.minimum_payment_amount(
         "eth",
         "btc",
         fiat_equivalent="usd",
-        # is_fixed_rate=True, # Seems like API is broken for this para. API responds always with 400
+        # is_fixed_rate=True,  # Seems like API is broken for this para. API responds always with 400
         is_fee_paid_by_user=True,
     )
     assert response["currency_from"] == "eth"
@@ -454,6 +455,27 @@ def test_get_minimum_payment_amount_with_optional_paras(
     assert type(response["min_amount"]) is float
     assert "fiat_equivalent" in response
     assert type(response["fiat_equivalent"]) is float
+
+
+def test_update_payment_estimate(now_payments_api_key: NOWPaymentsAPI) -> None:
+    payment = now_payments_api_key.create_payment(
+        100, price_currency="usd", pay_currency="btc"
+    )
+    response = now_payments_api_key.update_payment_estimate(payment["payment_id"])
+    assert response["id"] == int(payment["payment_id"])
+    assert "token_id" in response
+    assert "pay_amount" in response
+    assert "expiration_estimate_date" in response
+
+
+def test_update_payment_estimate_wrong_payment_id_nowpayments_error(now_payments_api_key: NOWPaymentsAPI) -> None:
+    with pytest.raises(NowPaymentsException, match="Payment ID should be greater than zero"):
+        now_payments_api_key.update_payment_estimate(-123_456_789)
+
+
+def test_update_payment_estimate_wrong_payment_id_http_error(now_payments_api_key: NOWPaymentsAPI) -> None:
+    with pytest.raises(HTTPError, match="404 Client Error"):
+        now_payments_api_key.update_payment_estimate(123_456_789)
 
 
 # -------------------------
