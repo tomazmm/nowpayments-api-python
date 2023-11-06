@@ -8,6 +8,9 @@ from requests import HTTPError
 
 from .models.payment import PaymentData, InvoicePaymentData, InvoiceData
 
+# Constants
+AVAILABLE_FIAT = ["usd", "eur", "nzd", "brl", "gbp"]
+
 
 class NowPaymentsException(Exception):
     pass
@@ -16,8 +19,6 @@ class NowPaymentsException(Exception):
 class NOWPaymentsAPI:
     BASE_URI = "https://api.nowpayments.io/v1/"
     BASE_URI_SANDBOX = "https://api-sandbox.nowpayments.io/v1/"
-
-    AVAILABLE_FIAT = ["usd", "eur", "nzd", "brl", "gbp"]
 
     def __init__(
         self, api_key: str, email: str = "", password: str = "", sandbox=False
@@ -141,7 +142,7 @@ class NOWPaymentsAPI:
         """
         if price_amount <= 0:
             raise NowPaymentsException("Amount must be greater than 0")
-        if price_currency not in self.AVAILABLE_FIAT:
+        if price_currency not in AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
         if pay_currency not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
@@ -194,7 +195,7 @@ class NOWPaymentsAPI:
         """
         if price_amount <= 0:
             raise NowPaymentsException("Amount must be greater than 0")
-        if price_currency not in self.AVAILABLE_FIAT:
+        if price_currency not in AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
         if pay_currency not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
@@ -283,10 +284,7 @@ class NOWPaymentsAPI:
 
         """
         endpoint = f"min-amount?currency_from={currency_from}&currency_to={currency_to}"
-        if (
-            "fiat_equivalent" in kwargs
-            and kwargs["fiat_equivalent"] in self.AVAILABLE_FIAT
-        ):
+        if "fiat_equivalent" in kwargs and kwargs["fiat_equivalent"] in AVAILABLE_FIAT:
             endpoint += f"&fiat_equivalent={kwargs['fiat_equivalent']}"
         if "is_fixed_rate" in kwargs and type(kwargs["is_fixed_rate"]) is bool:
             endpoint += f"&is_fixed_rate={kwargs['is_fixed_rate']}"
@@ -324,7 +322,7 @@ class NOWPaymentsAPI:
         """
         if amount <= 0:
             raise NowPaymentsException("Amount must be greater than 0")
-        if currency_from not in self.AVAILABLE_FIAT:
+        if currency_from not in AVAILABLE_FIAT:
             raise NowPaymentsException("Unsupported fiat currency")
         if currency_to not in self.currencies()["currencies"]:
             raise NowPaymentsException("Unsupported cryptocurrency")
