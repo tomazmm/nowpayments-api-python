@@ -387,6 +387,16 @@ def test_get_list_of_payments(now_payments_email_password: NOWPaymentsAPI) -> No
     assert len(payment_list["data"]) <= 10
 
 
+def test_get_list_of_payments_with_period(now_payments_email_password: NOWPaymentsAPI) -> None:
+    now = datetime.datetime.now()
+    week_ago = now - datetime.timedelta(days=7)
+    payment_list = now_payments_email_password.list_of_payments(
+        date_from=week_ago,
+        date_to=now
+    )
+    assert type(payment_list["data"]) == list
+
+
 def test_get_list_of_payments_limit_error(
         now_payments_email_password: NOWPaymentsAPI,
 ) -> None:
@@ -461,7 +471,7 @@ def test_update_payment_estimate(now_payments_api_key: NOWPaymentsAPI) -> None:
     payment = now_payments_api_key.create_payment(
         100, price_currency="usd", pay_currency="btc"
     )
-    response = now_payments_api_key.update_payment_estimate(int(payment["payment_id"] ))
+    response = now_payments_api_key.update_payment_estimate(int(payment["payment_id"]))
     assert response["id"] == int(payment["payment_id"])
     assert "token_id" in response
     assert "pay_amount" in response

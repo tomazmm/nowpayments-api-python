@@ -2,6 +2,7 @@
 A Python wrapper for the NOWPayments API.
 """
 import logging
+from datetime import datetime
 from typing import Any, Dict, Union
 import requests
 from requests import HTTPError
@@ -348,6 +349,9 @@ class NOWPaymentsAPI:
             page: int = 0,
             sort_by: str = "created_at",
             order_by: str = "asc",
+            date_from: datetime = None,
+            date_to: datetime = None
+
     ) -> Any:
         """
         Returns the entire list of all transactions, created with certain API key.
@@ -359,7 +363,9 @@ class NOWPaymentsAPI:
             actually_paid, pay_currency, order_id, order_description, purchase_id, outcome_amount, outcome_currency)
         :param str order_by: Display the list in ascending or descending order. Set to asc by default
             (possible values: asc, desc)
-
+        :param datetime date_from: Select the displayed period start date
+        :param datetime date_to: Select the displayed period end date
+        :returns
         """
         available_sort_paras = [
             "created_at",
@@ -377,6 +383,7 @@ class NOWPaymentsAPI:
             "outcome_amount",
             "outcome_currency",
         ]
+        period = ""
         if 1 > limit or limit > 500:
             raise NowPaymentsException("Limit must be a number between 1 and 500")
         if page < 0:
@@ -385,10 +392,15 @@ class NOWPaymentsAPI:
             raise NowPaymentsException("Invalid sort parameter")
         if order_by not in ["asc", "desc"]:
             raise NowPaymentsException("Invalid order parameter")
+        if date_from:
+            period += f"dateFrom={date_from.strftime('%Y-%m-%dT%H:%M:%S.%s')}"
+        if date_to:
+            period += f"&dateTo={date_to.strftime('%Y-%m-%dT%H:%M:%S.%s')}"
 
         endpoint = (
-            f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}"
+            f"payment?limit={limit}&page={page}&sortBy={sort_by}&orderBy={order_by}&{period}"
         )
+
         bearer = self.auth()["token"]
         return self._get_request(endpoint, bearer=bearer)
 
