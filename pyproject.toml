@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nowpayments-api"
-version = "1.0.1"
+version = "1.0.2"
 description = "A Python wrapper for the NOWPayments API."
 authors = ["Tomaž Mesarec <tomaz.mesarec@gmail.com>", "Arian Ventura Rodríguez <arianventura94@gmail.com>"]
 readme = "README.md"
